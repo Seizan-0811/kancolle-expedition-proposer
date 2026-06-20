@@ -32,12 +32,12 @@ import type {
  * 艦種ごとの典型的な装備による火力上乗せ分を見込む。
  */
 const EQUIPMENT_FIRE_BONUS: Record<number, number> = {
-  1:  0,  // DE  海防艦
-  2:  0,  // DD  駆逐艦
-  3:  20, // CL  軽巡
-  4:  20, // CLT 雷巡
-  5:  30, // CA  重巡
-  6:  30, // CAV 航巡
+  1:  10, // DE  海防艦   (小口径主砲×2 程度)
+  2:  20, // DD  駆逐艦   (主砲×2 程度)
+  3:  25, // CL  軽巡     (主砲×2〜3)
+  4:  25, // CLT 雷巡     (主砲×2〜3)
+  5:  40, // CA  重巡     (20.3cm×3 = +39〜45)
+  6:  35, // CAV 航巡     (20.3cm×2〜3)
   7:  20, // CVL 軽母
   8:  80, // FBB 高速戦艦
   9:  80, // BB  戦艦
@@ -48,7 +48,7 @@ const EQUIPMENT_FIRE_BONUS: Record<number, number> = {
   16: 20, // AV  水母
   18: 20, // CVB 装甲空母
   20: 0,  // AS  潜水母艦
-  21: 20, // CT  練巡
+  21: 25, // CT  練巡
 };
 import { SHIP_TYPE_IDS } from './types';
 import { sumFleetStats, meetsStats } from './shipStats';
@@ -275,8 +275,21 @@ export function matchExpeditions(
       }
     }
 
-    // 燃費ソート (大発は制約として生成済みのため追加フィルタ不要)
+    // 有効火力比（推定装備ボーナス込み）が高い順に優先し、同等なら燃費順
+    const fireReq = expedition.statRequirements?.fire ?? 0;
     allCandidates.sort((a, b) => {
+      // 火力比を計算: 要件がない場合は常に 1.0 として燃費のみで比較
+      const fireRatio = (fleet: OwnedShip[]) => {
+        if (fireReq === 0) return 1;
+        const stats = fleet.map((s) => s.stats).filter((s): s is ShipStats => s != null);
+        if (stats.length !== fleet.length) return 0;
+        const bonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
+        return (sumFleetStats(stats).fire + bonus) / fireReq;
+      };
+      const ra = fireRatio(a);
+      const rb = fireRatio(b);
+      if (Math.abs(ra - rb) > 0.001) return rb - ra; // 火力比が高い順
+      // 同等なら燃費が少ない順
       const hasA = a.every((s) => s.fuel != null);
       const hasB = b.every((s) => s.fuel != null);
       if (!hasA && !hasB) return 0;
