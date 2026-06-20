@@ -487,9 +487,28 @@ const kcwebSnippet = `(function() {
                 7:'CVL',8:'FBB',9:'BB',10:'BBV',11:'CV',
                 13:'SS',14:'SSV',16:'AV',18:'CVB',20:'AS',21:'CT'};
 
-  // Vue 2 の store にアクセス
-  const store = document.querySelector('#app').__vue__?.$store;
-  if (!store) return console.error('kc-webのVuexストアにアクセスできませんでした');
+  // Vuex ストアを探す (Vue 2 / Vue 3 / DOM探索の3段階)
+  function findStore() {
+    const el = document.querySelector('#app');
+    // Vue 2
+    if (el?.__vue__?.$store) return el.__vue__.$store;
+    // Vue 3 + Vuex 4
+    if (el?.__vue_app__?.config?.globalProperties?.$store)
+      return el.__vue_app__.config.globalProperties.$store;
+    // Vue 2: 子要素を再帰探索 (本番ビルドで #app に __vue__ が付かない場合)
+    function walk(node) {
+      if (!node) return null;
+      if (node.__vue__?.$store?.state?.ships?.length) return node.__vue__.$store;
+      for (const child of (node.children || [])) {
+        const found = walk(child);
+        if (found) return found;
+      }
+      return null;
+    }
+    return walk(el || document.body);
+  }
+  const store = findStore();
+  if (!store) return console.error('kc-webのVuexストアにアクセスできませんでした。\\nkc-webを開いたタブで実行しているか確認してください。\\nデバッグ: コンソールで document.querySelector(\"#app\").__vue__ を確認してください。');
 
   // ShipMaster[]: .id .type .name .fire .antiAir .minAsw .maxAsw .minScout .maxScout
   const masterMap = new Map(store.state.ships.map(s => [s.id, s]));
