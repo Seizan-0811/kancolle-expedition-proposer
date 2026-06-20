@@ -233,7 +233,11 @@ export function matchExpeditions(
 
   for (const { expedition } of ranked) {
     // 未割当艦娘のみに絞り込む
-    const remaining = availableShips.filter((s) => !assignedShipIds.has(shipKey(s)));
+    // 火力の高い艦が先に試されるよう素ステータス火力の降順でソート
+    // → findCandidates のバックトラックで最初に見つかる20候補が高火力寄りになる
+    const remaining = availableShips
+      .filter((s) => !assignedShipIds.has(shipKey(s)))
+      .sort((a, b) => (b.stats?.fire ?? 0) - (a.stats?.fire ?? 0));
 
     // 残り艦娘から候補を収集 (大発制約あり)
     // → 制約を満たす候補がなければ制約なしにフォールバック
