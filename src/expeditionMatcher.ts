@@ -207,6 +207,8 @@ export function matchExpeditions(
   // Step 1: 全艦娘での候補数を難易度スコアとして計算し、処理順序を決める
   //         minDaihatsu 制約込みで候補を数えることで、大発確保が難しい遠征も
   //         スコアが低くなり自然に先に処理されるようになる
+  //         さらに火力要件が高い遠征はスコアを下げて優先処理する
+  //         （候補数が多くても火力達成が難しければ先に高火力艦を確保するべきため）
   const ranked = expeditions.map((exp) => {
     let score = 0;
     for (const pattern of exp.requiredTypes) {
@@ -221,6 +223,10 @@ export function matchExpeditions(
         exp.minDaihatsu ?? 0,
       ).length;
     }
+    // 火力要件が高い遠征は候補数スコアを減らして優先処理（高火力艦を先に確保）
+    const fireReq = exp.statRequirements?.fire ?? 0;
+    if (fireReq >= 500) score = Math.floor(score * 0.3);
+    else if (fireReq >= 300) score = Math.floor(score * 0.6);
     return { expedition: exp, score };
   });
   // 候補が少ない (難しい) 遠征を先に処理する
@@ -253,11 +259,11 @@ export function matchExpeditions(
           6,
           expedition.minFlagshipLv,
           expedition.totalLevel,
-          20,
+          50,
           minDaihatsu,
         );
         allCandidates.push(...candidates);
-        if (allCandidates.length >= 20) break;
+        if (allCandidates.length >= 50) break;
       }
     }
 
@@ -272,10 +278,10 @@ export function matchExpeditions(
           6,
           expedition.minFlagshipLv,
           expedition.totalLevel,
-          20,
+          50,
         );
         allCandidates.push(...candidates);
-        if (allCandidates.length >= 20) break;
+        if (allCandidates.length >= 50) break;
       }
     }
 
