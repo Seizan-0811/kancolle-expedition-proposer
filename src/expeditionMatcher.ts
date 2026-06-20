@@ -22,6 +22,34 @@ import type {
   FleetSuggestion,
   MatchResult,
 } from './types';
+
+// ---------------------------------------------------------------------------
+// 艦種別推定装備火力ボーナス
+// ---------------------------------------------------------------------------
+/**
+ * 遠征要件の火力チェック時に加算する推定装備ボーナス。
+ * 素ステータスだけでは火力要件を達成しにくいため、
+ * 艦種ごとの典型的な装備による火力上乗せ分を見込む。
+ */
+const EQUIPMENT_FIRE_BONUS: Record<number, number> = {
+  1:  0,  // DE  海防艦
+  2:  0,  // DD  駆逐艦
+  3:  20, // CL  軽巡
+  4:  20, // CLT 雷巡
+  5:  30, // CA  重巡
+  6:  30, // CAV 航巡
+  7:  20, // CVL 軽母
+  8:  80, // FBB 高速戦艦
+  9:  80, // BB  戦艦
+  10: 80, // BBV 航戦
+  11: 20, // CV  空母
+  13: 0,  // SS  潜水
+  14: 0,  // SSV 潜水空母
+  16: 20, // AV  水母
+  18: 20, // CVB 装甲空母
+  20: 0,  // AS  潜水母艦
+  21: 20, // CT  練巡
+};
 import { SHIP_TYPE_IDS } from './types';
 import { sumFleetStats, meetsStats } from './shipStats';
 
@@ -62,6 +90,7 @@ function findCandidates(
   minFlagshipLv: number,
   totalLevel: number,
   maxResults = 20,
+  minDaihatsu = 0,
 ): OwnedShip[][] {
   const results: OwnedShip[][] = [];
 
@@ -135,6 +164,11 @@ function findCandidates(
     // 合計レベルチェック
     const lvSum = fleet.reduce((s, sh) => s + sh.level, 0);
     if (lvSum < totalLevel) return;
+    // 大発装備可能艦娘の最低人数チェック
+    if (minDaihatsu > 0) {
+      const dCount = fleet.filter((s) => s.canDaihatsu).length;
+      if (dCount < minDaihatsu) return;
+    }
     results.push(sorted);
   }
 
@@ -171,7 +205,8 @@ export function matchExpeditions(
   }
 
   // Step 1: 全艦娘での候補数を難易度スコアとして計算し、処理順序を決める
-  //         (スコア算出は少数サンプルで十分; 実割り当てには使わない)
+  //         minDaihatsu 制約込みで候補を数えることで、大発確保が難しい遠征も
+  //         スコアが低くなり自然に先に処理されるようになる
   const ranked = expeditions.map((exp) => {
     let score = 0;
     for (const pattern of exp.requiredTypes) {
@@ -183,6 +218,7 @@ export function matchExpeditions(
         exp.minFlagshipLv,
         exp.totalLevel,
         5, // スコア用なので少数でよい
+        exp.minDaihatsu ?? 0,
       ).length;
     }
     return { expedition: exp, score };
@@ -199,31 +235,48 @@ export function matchExpeditions(
     // 未割当艦娘のみに絞り込む
     const remaining = availableShips.filter((s) => !assignedShipIds.has(shipKey(s)));
 
-    // 残り艦娘から複数候補を収集し、燃料消費が少ない順にソートして採用
-    const allCandidates: OwnedShip[][] = [];
-    for (const pattern of expedition.requiredTypes) {
-      const candidates = findCandidates(
-        remaining,
-        pattern,
-        expedition.minShipCount,
-        6,
-        expedition.minFlagshipLv,
-        expedition.totalLevel,
-        20, // 燃費ソートのために複数取得
-      );
-      allCandidates.push(...candidates);
-      if (allCandidates.length >= 20) break;
+    // 残り艦娘から候補を収集 (大発制約あり)
+    // → 制約を満たす候補がなければ制約なしにフォールバック
+    const minDaihatsu = expedition.minDaihatsu ?? 0;
+    let allCandidates: OwnedShip[][] = [];
+
+    if (minDaihatsu > 0) {
+      for (const pattern of expedition.requiredTypes) {
+        const candidates = findCandidates(
+          remaining,
+          pattern,
+          expedition.minShipCount,
+          6,
+          expedition.minFlagshipLv,
+          expedition.totalLevel,
+          20,
+          minDaihatsu,
+        );
+        allCandidates.push(...candidates);
+        if (allCandidates.length >= 20) break;
+      }
     }
 
-    // 大発装備可能艦娘が 2 隻以上の候補を優先プールへ (ソフト制約)
-    // → 2 隻以上含む候補がない場合は制約なしにフォールバック
-    const daihatsuPool = allCandidates.filter(
-      (fleet) => fleet.filter((s) => s.canDaihatsu).length >= 2,
-    );
-    const sortTarget = daihatsuPool.length > 0 ? daihatsuPool : allCandidates;
+    // 制約付き候補がなければ制約なしで再生成 (フォールバック)
+    const daihatsuConstraintApplied = allCandidates.length > 0;
+    if (allCandidates.length === 0) {
+      for (const pattern of expedition.requiredTypes) {
+        const candidates = findCandidates(
+          remaining,
+          pattern,
+          expedition.minShipCount,
+          6,
+          expedition.minFlagshipLv,
+          expedition.totalLevel,
+          20,
+        );
+        allCandidates.push(...candidates);
+        if (allCandidates.length >= 20) break;
+      }
+    }
 
-    // 全艦の fuel が揃っている候補は燃料合計昇順、揃っていない候補は末尾へ
-    sortTarget.sort((a, b) => {
+    // 燃費ソート (大発は制約として生成済みのため追加フィルタ不要)
+    allCandidates.sort((a, b) => {
       const hasA = a.every((s) => s.fuel != null);
       const hasB = b.every((s) => s.fuel != null);
       if (!hasA && !hasB) return 0;
@@ -234,10 +287,10 @@ export function matchExpeditions(
       return sumA - sumB;
     });
 
-    // 燃費上位 PICK_TOP 件の中からランダムに1件選ぶ
-    // → 条件を満たす候補内での選択なので要件は破綻しない
-    const PICK_TOP = 3;
-    const pool = sortTarget.slice(0, PICK_TOP);
+    // 大発制約が有効な場合は決定的に最善候補を選ぶ (PICK_TOP=1)
+    // フォールバック時のみランダム性を維持 (PICK_TOP=3)
+    const PICK_TOP = daihatsuConstraintApplied ? 1 : 3;
+    const pool = allCandidates.slice(0, PICK_TOP);
     const chosen: OwnedShip[] | null =
       pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
 
@@ -254,7 +307,10 @@ export function matchExpeditions(
     // ステータス集計
     const statsList = chosen.map((s) => s.stats).filter((s): s is ShipStats => s != null);
     const totalStats = statsList.length === chosen.length ? sumFleetStats(statsList) : null;
-    const meetsStat = totalStats ? meetsStats(totalStats, expedition.statRequirements) : null;
+    // 推定装備火力ボーナスを加味した有効火力で要件チェック (表示は素ステータスのまま)
+    const equipFireBonus = chosen.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
+    const effectiveStats = totalStats ? { ...totalStats, fire: totalStats.fire + equipFireBonus } : null;
+    const meetsStat = effectiveStats ? meetsStats(effectiveStats, expedition.statRequirements) : null;
 
     // 燃料・弾薬消費量 (全艦の値が揃っている場合のみ計算)
     const fuelList = chosen.map((s) => s.fuel).filter((f): f is number => f != null);
@@ -319,7 +375,8 @@ export function suggestForOneExpedition(
     let meetsStat: boolean | null = null;
     if (statsList.length === fleet.length) {
       totalStats = sumFleetStats(statsList);
-      meetsStat = meetsStats(totalStats, expedition.statRequirements);
+      const equipFireBonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
+      meetsStat = meetsStats({ ...totalStats, fire: totalStats.fire + equipFireBonus }, expedition.statRequirements);
     }
     const fuelList = fleet.map((s) => s.fuel).filter((f): f is number => f != null);
     const ammoList = fleet.map((s) => s.ammo).filter((a): a is number => a != null);
