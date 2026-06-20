@@ -481,7 +481,7 @@ const snippetCopied = ref(false)
 // kc-web ブラウザコンソール用スニペット
 // kc-web は Vue2 + Vuex + IndexedDB(Dexie) を使用
 // saveData と ships マスターはどちらも Vuex store.state に既にロード済み
-const kcwebSnippet = `(function() {
+const kcwebSnippet = `(async function() {
   // notes/kc-web-data-format.md の SHIP_TYPE enum に準拠
   const TYPE = {1:'DE',2:'DD',3:'CL',4:'CLT',5:'CA',6:'CAV',
                 7:'CVL',8:'FBB',9:'BB',10:'BBV',11:'CV',
@@ -553,8 +553,12 @@ const kcwebSnippet = `(function() {
   console.log(\`所持艦娘: \${ships.length}隻 (大発装備可: \${daihatsuCount}隻) ※素ステータス+近代化改修のみ\`);
   const json = JSON.stringify(ships, null, 2);
   console.log(json);
-  try { copy(json); console.log('✓ クリップボードにコピーしました。JSONインポートタブに貼り付けてください。'); }
-  catch(e) { console.log('↑ 上のJSONをコピーしてJSONインポートタブに貼り付けてください。'); }
+  try {
+    await navigator.clipboard.writeText(json);
+    console.log('✓ クリップボードにコピーしました。JSONインポートタブに貼り付けてください。');
+  } catch(e) {
+    console.log('クリップボードへのコピーに失敗しました。↑ 上のJSONを手動でコピーしてJSONインポートタブに貼り付けてください。');
+  }
 })();`
 
 // ブックマークレット URL (スニペットをそのまま javascript: プロトコルにエンコード)
