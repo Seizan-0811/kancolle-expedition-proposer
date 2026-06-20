@@ -147,7 +147,14 @@
               (除外中: {{ excludedShipIds.size }}隻)
             </span>
           </span>
-          <button v-if="ships.length" class="btn btn-danger-sm" @click="clearShips">全削除</button>
+          <div class="ship-list-actions">
+            <button v-if="ships.length" class="btn btn-secondary-sm" @click="exportShipsJson">💾 保存</button>
+            <label class="btn btn-secondary-sm">
+              📂 読み込み
+              <input type="file" accept=".json" style="display:none" @change="importFromFile" />
+            </label>
+            <button v-if="ships.length" class="btn btn-danger-sm" @click="clearShips">全削除</button>
+          </div>
         </div>
         <div class="ship-list">
           <div v-if="!ships.length" class="empty-msg">艦娘を追加してください</div>
@@ -333,7 +340,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import type { OwnedShip, Expedition, MatchResult, ShipStats } from './types'
 import { matchExpeditions } from './expeditionMatcher'
 import rawData from '../data/expeditions.json'
@@ -403,6 +410,65 @@ function toggleExclude(uniqueId: number) {
   else next.add(uniqueId)
   excludedShipIds.value = next
   matchResult.value = null
+}
+
+// ── localStorage 永続化 ────────────────────────────────────────────────────
+const LS_KEY = 'kancolle-expedition-ships'
+
+onMounted(() => {
+  try {
+    const saved = localStorage.getItem(LS_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved) as OwnedShip[]
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        ships.value = parsed
+        nextId = Math.max(...parsed.map(s => s.uniqueId), 0) + 1
+      }
+    }
+  } catch {
+    // 読み込み失敗は無視
+  }
+})
+
+watch(ships, (val) => {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(val))
+  } catch {
+    // 書き込み失敗は無視
+  }
+}, { deep: true })
+
+// ── JSONエクスポート ────────────────────────────────────────────────────────
+function exportShipsJson() {
+  const json = JSON.stringify(ships.value, null, 2)
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `kancolle-ships-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ── ファイルからインポート ─────────────────────────────────────────────────
+function importFromFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target?.result as string) as OwnedShip[]
+      if (!Array.isArray(data)) throw new Error('配列形式のJSONファイルを選択してください')
+      ships.value = data
+      nextId = Math.max(...data.map(s => s.uniqueId), 0) + 1
+      matchResult.value = null
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'ファイルの読み込みに失敗しました')
+    }
+  }
+  reader.readAsText(file)
+  // input をリセット（同じファイルを再選択できるよう）
+  ;(event.target as HTMLInputElement).value = ''
 }
 
 // kc-web インポート
@@ -883,6 +949,12 @@ function statusLabel(meets: boolean | null) {
   color: #c07070; border-radius: 4px; font-size: 0.75rem; cursor: pointer;
 }
 .btn-danger-sm:hover { background: #3a1a1a; }
+.btn-secondary-sm {
+  padding: 3px 8px; background: transparent; border: 1px solid #2a4a6a;
+  color: #7ab0d0; border-radius: 4px; font-size: 0.75rem; cursor: pointer;
+}
+.btn-secondary-sm:hover { background: #1a2a3a; }
+.ship-list-actions { display: flex; gap: 4px; align-items: center; }
 .btn-propose {
   background: linear-gradient(135deg, #1a5a4a, #2a7a60);
   color: #d0fff0; font-size: 0.9rem; padding: 8px 24px;
