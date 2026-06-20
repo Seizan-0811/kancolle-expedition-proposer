@@ -1,0 +1,147 @@
+[
+  {
+    "type": "CV",
+    "name": "赤城改二",
+    "level": 99
+  },
+  {
+    "type": "CV",
+    "name": "加賀改二",
+    "level": 99
+  },
+  {
+    "type": "CLT",
+    "name": "大井改二",
+    "level": 99
+  },
+  {
+    "type": "CLT",
+    "name": "木曾改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "Fletcher Mk.II",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "夕雲改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "天津風改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "綾波改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "陽炎改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "Ташкент改",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "風雲改二",
+    "level": 99
+  },
+  {
+    "type": "CL",
+    "name": "阿武隈改二",
+    "level": 99
+  },
+  {
+    "type": "CVL",
+    "name": "熊野航改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "雪風改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "時雨改三",
+    "level": 99
+  },
+  {
+    "type": "CAV",
+    "name": "最上改二特",
+    "level": 99
+  },
+  {
+    "type": "CL",
+    "name": "矢矧改二乙",
+    "level": 144
+  },
+  {
+    "type": "CL",
+    "name": "能代改二",
+    "level": 131
+  },
+  {
+    "type": "DD",
+    "name": "秋月改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "初月改二",
+    "level": 142
+  },
+  {
+    "type": "DD",
+    "name": "Mogador改",
+    "level": 97
+  },
+  {
+    "type": "DD",
+    "name": "長波改二",
+    "level": 164
+  },
+  {
+    "type": "DD",
+    "name": "高波改二",
+    "level": 126
+  },
+  {
+    "type": "DD",
+    "name": "清霜改二",
+    "level": 98
+  },
+  {
+    "type": "DD",
+    "name": "朝霜改二",
+    "level": 99
+  },
+  {
+    "type": "DD",
+    "name": "丹陽",
+    "level": 96
+  },
+  {
+    "type": "AV",
+    "name": "三隈改二特",
+    "level": 99
+  },
+  {
+    "type": "BB",
+    "name": "大和改二",
+    "level": 99
+  },
+  {
+    "type": "BB",
+    "name": "武蔵改二",
+    "level": 99
+  }
+]
