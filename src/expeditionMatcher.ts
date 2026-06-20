@@ -259,11 +259,11 @@ export function matchExpeditions(
           6,
           expedition.minFlagshipLv,
           expedition.totalLevel,
-          50,
+          20,
           minDaihatsu,
         );
         allCandidates.push(...candidates);
-        if (allCandidates.length >= 50) break;
+        if (allCandidates.length >= 20) break;
       }
     }
 
@@ -278,48 +278,49 @@ export function matchExpeditions(
           6,
           expedition.minFlagshipLv,
           expedition.totalLevel,
-          50,
+          20,
         );
         allCandidates.push(...candidates);
-        if (allCandidates.length >= 50) break;
+        if (allCandidates.length >= 20) break;
       }
     }
 
     // ソート優先順位:
     //   1. 戦艦 (FBB/BB/BBV) を含まない艦隊を優先
-    //      → 戦艦は燃費が高いため、やむをえない場合のみ採用する
-    //   2. 戦艦なし同士: 有効火力比 (推定装備ボーナス込み) 降順 → 燃費昇順
+    //   2. 戦艦なし同士: 有効火力比降順 → 燃費昇順
     //   3. 戦艦あり同士: 燃費昇順 (消費の少ない戦艦を優先) → 火力比降順
+    // パフォーマンス: ソート前にキーを一括計算してキャッシュする
     const fireReq = expedition.statRequirements?.fire ?? 0;
-    // 戦艦艦種 ID: FBB=8, BB=9, BBV=10
-    const BB_TYPES = new Set([8, 9, 10]);
-    const hasBB = (fleet: OwnedShip[]) => fleet.some((s) => BB_TYPES.has(s.shipTypeId));
-    const fuelSum = (fleet: OwnedShip[]) =>
-      fleet.every((s) => s.fuel != null) ? fleet.reduce((acc, s) => acc + s.fuel!, 0) : Infinity;
-    const fireRatio = (fleet: OwnedShip[]) => {
+    const BB_TYPES = new Set([8, 9, 10]); // FBB=8, BB=9, BBV=10
+    const computeFireRatio = (fleet: OwnedShip[]) => {
       if (fireReq === 0) return 1;
       const stats = fleet.map((s) => s.stats).filter((s): s is ShipStats => s != null);
       if (stats.length !== fleet.length) return 0;
       const bonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
       return (sumFleetStats(stats).fire + bonus) / fireReq;
     };
-    allCandidates.sort((a, b) => {
-      const bbA = hasBB(a) ? 1 : 0;
-      const bbB = hasBB(b) ? 1 : 0;
-      // 戦艦なし優先
-      if (bbA !== bbB) return bbA - bbB;
-      if (bbA === 0) {
+    const keys = allCandidates.map((fleet) => ({
+      fleet,
+      hasBB: fleet.some((s) => BB_TYPES.has(s.shipTypeId)) ? 1 : 0,
+      fuel: fleet.every((s) => s.fuel != null)
+        ? fleet.reduce((acc, s) => acc + s.fuel!, 0)
+        : Infinity,
+      fireRatio: computeFireRatio(fleet),
+    }));
+    keys.sort((a, b) => {
+      if (a.hasBB !== b.hasBB) return a.hasBB - b.hasBB; // 戦艦なし優先
+      if (a.hasBB === 0) {
         // 両方戦艦なし: 火力比降順 → 燃費昇順
-        const diff = fireRatio(b) - fireRatio(a);
+        const diff = b.fireRatio - a.fireRatio;
         if (Math.abs(diff) > 0.001) return diff;
-        return fuelSum(a) - fuelSum(b);
+        return a.fuel - b.fuel;
       } else {
-        // 両方戦艦あり: 燃費昇順 (消費の少ない戦艦を優先) → 火力比降順
-        const fuelDiff = fuelSum(a) - fuelSum(b);
-        if (fuelDiff !== 0) return fuelDiff;
-        return fireRatio(b) - fireRatio(a);
+        // 両方戦艦あり: 燃費昇順 → 火力比降順
+        if (a.fuel !== b.fuel) return a.fuel - b.fuel;
+        return b.fireRatio - a.fireRatio;
       }
     });
+    allCandidates = keys.map((k) => k.fleet);
 
     // 大発制約が有効な場合は決定的に最善候補を選ぶ (PICK_TOP=1)
     // フォールバック時のみランダム性を維持 (PICK_TOP=3)
