@@ -60,6 +60,11 @@ export interface Expedition {
   fuelRate: number;
   /** 弾薬消費率 (%) — 各艦の最大弾薬に乗じる。推定値: マンスリー遠征は全て 20 */
   ammoRate: number;
+  /**
+   * 大発動艇系を装備可能な艦娘の最低人数
+   * 省略または 0 の場合は制約なし。満たせない場合は制約なしにフォールバック。
+   */
+  minDaihatsu?: number;
   note: string;
 }
 
