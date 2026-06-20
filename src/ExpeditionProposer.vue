@@ -538,8 +538,10 @@ const kcwebSnippet = `(async function() {
     const lv  = stock.level ?? 1;
     const imp = stock.improvement ?? {};
 
-    const fire    = (m ? m.fire    : 0) + (imp.fire    ?? 0);
-    const antiAir = (m ? m.antiAir : 0) + (imp.antiAir ?? 0);
+    // master.fire/antiAir は改修MAX込みの素ステータス最大値のため加算不要
+    // master.minAsw/maxAsw はレベル計算が必要、imp.asw は対潜近代化改修ボーナス
+    const fire    = m ? m.fire    : 0;
+    const antiAir = m ? m.antiAir : 0;
     const asw     = (m ? (m.minAsw   + Math.floor((m.maxAsw   - m.minAsw)   * lv / 99)) : 0) + (imp.asw ?? 0);
     const scout   =  m ? (m.minScout + Math.floor((m.maxScout - m.minScout) * lv / 99)) : 0;
 
