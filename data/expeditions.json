@@ -30,7 +30,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "海防4のシンプル編成。報酬は要確認。"
+      "note": "海防4のシンプル編成。報酬は要確認。",
+      "minDaihatsu": 2
     },
     {
       "world": 1,
@@ -61,7 +62,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "報酬は要確認。"
+      "note": "報酬は要確認。",
+      "minDaihatsu": 2
     },
     {
       "world": 1,
@@ -92,7 +94,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "自由枠に駆逐/海防を追加して対潜・索敵を稼ぐ。"
+      "note": "自由枠に駆逐/海防を追加して対潜・索敵を稼ぐ。",
+      "minDaihatsu": 2
     },
     {
       "world": 1,
@@ -126,7 +129,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "残り1枠に駆逐または海防。"
+      "note": "残り1枠に駆逐または海防。",
+      "minDaihatsu": 2
     },
     {
       "world": 1,
@@ -161,7 +165,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "残り2枠に駆逐または海防。大成功でネジ1。"
+      "note": "残り2枠に駆逐または海防。大成功でネジ1。",
+      "minDaihatsu": 2
     },
     {
       "world": 2,
@@ -193,7 +198,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "報酬は要確認。"
+      "note": "報酬は要確認。",
+      "minDaihatsu": 2
     },
     {
       "world": 2,
@@ -225,7 +231,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "大成功条件はキラキラ6のみ。"
+      "note": "大成功条件はキラキラ6のみ。",
+      "minDaihatsu": 2
     },
     {
       "world": 2,
@@ -259,7 +266,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "2025/6/16 以降 DE4 が推奨(旧: DD2+DE2)。水母と軽巡の主砲で火力を稼ぐ。"
+      "note": "2025/6/16 以降 DE4 が推奨(旧: DD2+DE2)。水母と軽巡の主砲で火力を稼ぐ。",
+      "minDaihatsu": 2
     },
     {
       "world": 2,
@@ -295,7 +303,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "ネジ1狙い。能代改二・白露型推奨。大発は積みにくい。"
+      "note": "ネジ1狙い。能代改二・白露型推奨。大発は積みにくい。",
+      "minDaihatsu": 2
     },
     {
       "world": 2,
@@ -330,7 +339,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "索敵要求が高い。索敵装備（暁型・大淀・水上電探）必須。ネジ1狙い。"
+      "note": "索敵要求が高い。索敵装備（暁型・大淀・水上電探）必須。ネジ1狙い。",
+      "minDaihatsu": 2
     },
     {
       "world": 2,
@@ -365,7 +375,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "軽巡旗艦必須。索敵装備も多数必要。ネジ1狙い。大成功条件は要確認。"
+      "note": "軽巡旗艦必須。索敵装備も多数必要。ネジ1狙い。大成功条件は要確認。",
+      "minDaihatsu": 2
     },
     {
       "world": 7,
@@ -395,7 +406,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "報酬は要確認。"
+      "note": "報酬は要確認。",
+      "minDaihatsu": 2
     },
     {
       "world": 7,
@@ -426,7 +438,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "ステータス要求なし。2025/6/16 より護衛空母→軽巡に変更。残り2〜3枠は海防・潜水でキラ数を稼ぐ。"
+      "note": "ステータス要求なし。2025/6/16 より護衛空母→軽巡に変更。残り2〜3枠は海防・潜水でキラ数を稼ぐ。",
+      "minDaihatsu": 2
     },
     {
       "world": 7,
@@ -465,7 +478,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "護衛空母(旗艦)またはCVL+CL編成。燃料2000が主な報酬。ネジ1狙い。"
+      "note": "護衛空母(旗艦)またはCVL+CL編成。燃料2000が主な報酬。ネジ1狙い。",
+      "minDaihatsu": 2
     },
     {
       "world": 7,
@@ -500,7 +514,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "ドラム缶3隻6個以上で大成功。CV枠は水母・護衛空母でもOK。"
+      "note": "ドラム缶3隻6個以上で大成功。CV枠は水母・護衛空母でもOK。",
+      "minDaihatsu": 2
     },
     {
       "world": 7,
@@ -531,7 +546,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "報酬は要確認。"
+      "note": "報酬は要確認。",
+      "minDaihatsu": 2
     },
     {
       "world": 7,
@@ -564,7 +580,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "残り1枠に海防追加でキラ数確保も可。ネジ1狙い。"
+      "note": "残り1枠に海防追加でキラ数確保も可。ネジ1狙い。",
+      "minDaihatsu": 2
     },
     {
       "world": 4,
@@ -595,7 +612,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "報酬は要確認。"
+      "note": "報酬は要確認。",
+      "minDaihatsu": 2
     },
     {
       "world": 4,
@@ -626,7 +644,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "潜母艦Lv55以上必須。大発用に駆逐2を追加するのが一般的。伊良湖ランダム入手あり。"
+      "note": "潜母艦Lv55以上必須。大発用に駆逐2を追加するのが一般的。伊良湖ランダム入手あり。",
+      "minDaihatsu": 2
     },
     {
       "world": 4,
@@ -660,7 +679,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "D2と同じ編成でOK。潜母艦Lv65以上必須。ネジ1狙い。"
+      "note": "D2と同じ編成でOK。潜母艦Lv65以上必須。ネジ1狙い。",
+      "minDaihatsu": 2
     },
     {
       "world": 5,
@@ -693,7 +713,8 @@
       "prerequisiteIds": [],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "ネジ1狙い。重巡旗艦。索敵・対潜装備も必要。"
+      "note": "ネジ1狙い。重巡旗艦。索敵・対潜装備も必要。",
+      "minDaihatsu": 2
     },
     {
       "world": 5,
@@ -726,7 +747,8 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "ドラム缶3隻6個以上で大成功。駆逐5隻。ネジ1狙い。"
+      "note": "ドラム缶3隻6個以上で大成功。駆逐5隻。ネジ1狙い。",
+      "minDaihatsu": 2
     }
   ]
 }

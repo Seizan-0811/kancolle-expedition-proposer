@@ -96,6 +96,8 @@ export interface OwnedShip {
   fuel?: number;
   /** 最大弾薬 (MasterShip.ammo) — 消費計算用 */
   ammo?: number;
+  /** 大発動艇系 (カテゴリ 24) を装備可能か */
+  canDaihatsu?: boolean;
 }
 
 /** 艦娘の各ステータス値 (遠征計算に使う 4 つ) */

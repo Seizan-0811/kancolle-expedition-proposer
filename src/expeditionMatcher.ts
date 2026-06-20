@@ -215,8 +215,15 @@ export function matchExpeditions(
       if (allCandidates.length >= 20) break;
     }
 
+    // 大発装備可能艦娘が 2 隻以上の候補を優先プールへ (ソフト制約)
+    // → 2 隻以上含む候補がない場合は制約なしにフォールバック
+    const daihatsuPool = allCandidates.filter(
+      (fleet) => fleet.filter((s) => s.canDaihatsu).length >= 2,
+    );
+    const sortTarget = daihatsuPool.length > 0 ? daihatsuPool : allCandidates;
+
     // 全艦の fuel が揃っている候補は燃料合計昇順、揃っていない候補は末尾へ
-    allCandidates.sort((a, b) => {
+    sortTarget.sort((a, b) => {
       const hasA = a.every((s) => s.fuel != null);
       const hasB = b.every((s) => s.fuel != null);
       if (!hasA && !hasB) return 0;
@@ -230,7 +237,7 @@ export function matchExpeditions(
     // 燃費上位 PICK_TOP 件の中からランダムに1件選ぶ
     // → 条件を満たす候補内での選択なので要件は破綻しない
     const PICK_TOP = 3;
-    const pool = allCandidates.slice(0, PICK_TOP);
+    const pool = sortTarget.slice(0, PICK_TOP);
     const chosen: OwnedShip[] | null =
       pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
 

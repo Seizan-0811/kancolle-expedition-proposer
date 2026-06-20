@@ -2,7 +2,7 @@
   <div class="app-root">
     <!-- ヘッダー -->
     <header class="app-header">
-      <h1>🚢 マンスリー遠征 編成提案</h1>
+      <h1>🚢 艦これ遠征プランナー</h1>
       <p class="subtitle">所持艦娘を登録して、同時出撃できる最適な遠征編成を提案します</p>
     </header>
 
@@ -76,28 +76,67 @@
 
         <!-- kc-web インポート -->
         <div v-else-if="inputTab === 'kcweb'" class="form-card">
-          <p class="import-desc">
-            <strong>方法1: コンソールスニペット（推奨）</strong><br>
-            kc-webをブラウザで開き、DevTools (F12) &gt; Consoleに以下のスクリプトを貼り付けて実行。出力されたJSONをJSONインポートタブに貼り付けてください。
-          </p>
-          <div class="snippet-container">
-            <pre class="snippet-code">{{ kcwebSnippet }}</pre>
-            <button class="btn-copy" @click="copySnippet">{{ snippetCopied ? 'コピー済 ✓' : 'コピー' }}</button>
+
+          <!-- ── 方法1: ブックマークレット ── -->
+          <div class="kcweb-method">
+            <div class="kcweb-method-title">⭐ 方法1: ブックマークレット <span class="method-badge">かんたん</span></div>
+            <ol class="kcweb-steps">
+              <li>
+                下のリンクをブラウザの<strong>ブックマークバーにドラッグ</strong>して登録
+                <div class="bookmarklet-wrap">
+                  <a :href="bookmarkletUrl" class="bookmarklet-link" @click.prevent>🔖 kc-web 艦娘データ取得</a>
+                  <span class="bookmarklet-hint">← バーへドラッグ</span>
+                </div>
+                <p class="step-note">ブックマークバーが見えない場合: Chrome は Ctrl+Shift+B (Mac: ⌘+Shift+B) で表示できます</p>
+              </li>
+              <li>kc-web をブラウザで開く</li>
+              <li>ブックマークバーの「kc-web 艦娘データ取得」をクリック</li>
+              <li>「JSONインポート」タブに切り替えて、クリップボードの内容を貼り付けてインポート</li>
+            </ol>
           </div>
 
           <div class="import-divider"><span>または</span></div>
 
-          <p class="import-desc">
-            <strong>方法2: saveData JSON インポート</strong><br>
-            kc-webのConsoleで以下を実行してコピーし、下のテキストエリアに貼り付け。艦船マスターを自動取得します。<br>
-            <code>copy(JSON.stringify(document.querySelector('#app').__vue__.$store.state.saveData.getMinifyData()))</code>
-          </p>
-          <textarea v-model="kcwebSaveData" class="import-textarea" placeholder="saveData の値を貼り付け..."></textarea>
-          <p v-if="kcwebError" class="error-msg">{{ kcwebError }}</p>
-          <p v-if="kcwebStatus" class="status-msg">{{ kcwebStatus }}</p>
-          <button class="btn btn-primary" :disabled="kcwebLoading || !kcwebSaveData.trim()" @click="importFromKcweb">
-            {{ kcwebLoading ? '取得中...' : 'インポート' }}
-          </button>
+          <!-- ── 方法2: コンソールスニペット ── -->
+          <details class="kcweb-method kcweb-method--alt">
+            <summary class="kcweb-method-title">方法2: コンソールスニペット <span class="method-badge method-badge--alt">上級者向け</span></summary>
+            <ol class="kcweb-steps">
+              <li>kc-web をブラウザで開く</li>
+              <li>
+                DevTools を開く
+                <ul class="step-sub">
+                  <li>Chrome / Edge: <kbd>F12</kbd> または <kbd>Ctrl+Shift+I</kbd>（Mac: <kbd>⌘+Option+I</kbd>）</li>
+                  <li>Firefox: <kbd>F12</kbd></li>
+                </ul>
+              </li>
+              <li>
+                「Console」タブを選択し、下のスクリプトをコピーして貼り付け・実行
+                <p class="step-note">⚠️ Chrome では初回に「allow pasting」または「貼り付けを許可」と入力してから貼り付けてください</p>
+                <div class="snippet-container">
+                  <pre class="snippet-code">{{ kcwebSnippet }}</pre>
+                  <button class="btn-copy" @click="copySnippet">{{ snippetCopied ? 'コピー済 ✓' : 'コピー' }}</button>
+                </div>
+              </li>
+              <li>「JSONインポート」タブに切り替えて、コピーされた内容を貼り付けてインポート</li>
+            </ol>
+          </details>
+
+          <div class="import-divider"><span>または</span></div>
+
+          <!-- ── 方法3: saveData インポート ── -->
+          <details class="kcweb-method kcweb-method--alt">
+            <summary class="kcweb-method-title">方法3: saveData インポート <span class="method-badge method-badge--alt">上級者向け</span></summary>
+            <ol class="kcweb-steps">
+              <li>kc-web の Console で以下を実行してコピー</li>
+            </ol>
+            <code class="savedata-cmd">copy(JSON.stringify(document.querySelector('#app').__vue__.$store.state.saveData.getMinifyData()))</code>
+            <textarea v-model="kcwebSaveData" class="import-textarea mt-8" placeholder="コピーした値を貼り付け..."></textarea>
+            <p v-if="kcwebError" class="error-msg">{{ kcwebError }}</p>
+            <p v-if="kcwebStatus" class="status-msg">{{ kcwebStatus }}</p>
+            <button class="btn btn-primary" :disabled="kcwebLoading || !kcwebSaveData.trim()" @click="importFromKcweb">
+              {{ kcwebLoading ? '取得中...' : 'インポート' }}
+            </button>
+          </details>
         </div>
 
         <!-- 艦娘リスト -->
@@ -112,29 +151,45 @@
         </div>
         <div class="ship-list">
           <div v-if="!ships.length" class="empty-msg">艦娘を追加してください</div>
-          <div
-            v-for="ship in ships"
-            :key="ship.uniqueId"
-            class="ship-item"
-            :class="{ 'ship-item--excluded': excludedShipIds.has(ship.uniqueId) }"
+          <details
+            v-for="[typeId, typeShips] in shipsByType"
+            :key="typeId"
+            class="ship-type-group"
           >
-            <span class="ship-type-badge" :style="{ background: typeColor(ship.shipTypeId) }">
-              {{ typeLabel(ship.shipTypeId) }}
-            </span>
-            <span class="ship-name">{{ ship.name }}</span>
-            <span class="ship-level">Lv{{ ship.level }}</span>
-            <span v-if="ship.stats" class="ship-stats-mini">
-              火{{ ship.stats.fire }} 空{{ ship.stats.antiAir }} 潜{{ ship.stats.asw }} 索{{ ship.stats.scout }}
-            </span>
-            <span v-else class="ship-no-stats">ステータス未入力</span>
-            <button
-              class="btn-exclude"
-              :class="{ 'btn-exclude--active': excludedShipIds.has(ship.uniqueId) }"
-              @click="toggleExclude(ship.uniqueId)"
-              :title="excludedShipIds.has(ship.uniqueId) ? '除外解除' : '候補から除外'"
-            >{{ excludedShipIds.has(ship.uniqueId) ? '除外中' : '除外' }}</button>
-            <button class="btn-remove" @click="removeShip(ship.uniqueId)" title="削除">×</button>
-          </div>
+            <summary class="ship-type-summary">
+              <span class="ship-type-badge summary-badge" :style="{ background: typeColor(typeId) }">
+                {{ typeLabel(typeId) }}
+              </span>
+              <span class="summary-count">{{ typeShips.length }}隻</span>
+              <span
+                v-if="typeShips.some(s => excludedShipIds.has(s.uniqueId))"
+                class="summary-excluded"
+              >(除外中: {{ typeShips.filter(s => excludedShipIds.has(s.uniqueId)).length }}隻)</span>
+            </summary>
+            <div class="ship-type-body">
+              <div
+                v-for="ship in typeShips"
+                :key="ship.uniqueId"
+                class="ship-item"
+                :class="{ 'ship-item--excluded': excludedShipIds.has(ship.uniqueId) }"
+              >
+                <span class="ship-name">{{ ship.name }}</span>
+                <span class="ship-level">Lv{{ ship.level }}</span>
+                <span v-if="ship.canDaihatsu" class="daihatsu-badge" title="大発動艇系装備可能">大発</span>
+                <span v-if="ship.stats" class="ship-stats-mini">
+                  火{{ ship.stats.fire }} 空{{ ship.stats.antiAir }} 潜{{ ship.stats.asw }} 索{{ ship.stats.scout }}
+                </span>
+                <span v-else class="ship-no-stats">ステータス未入力</span>
+                <button
+                  class="btn-exclude"
+                  :class="{ 'btn-exclude--active': excludedShipIds.has(ship.uniqueId) }"
+                  @click="toggleExclude(ship.uniqueId)"
+                  :title="excludedShipIds.has(ship.uniqueId) ? '除外解除' : '候補から除外'"
+                >{{ excludedShipIds.has(ship.uniqueId) ? '除外中' : '除外' }}</button>
+                <button class="btn-remove" @click="removeShip(ship.uniqueId)" title="削除">×</button>
+              </div>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -216,6 +271,7 @@
                   </span>
                   <span class="result-ship-name">{{ ship.name }}</span>
                   <span class="result-ship-lv">Lv{{ ship.level }}</span>
+                  <span v-if="ship.canDaihatsu" class="daihatsu-mark" title="大発動艇系装備可能">大発</span>
                 </div>
               </div>
 
@@ -253,6 +309,26 @@
         </section>
       </div>
     </div>
+
+    <!-- フッター: 参照サイト一覧 -->
+    <footer class="app-footer">
+      <span class="footer-label">参照サイト</span>
+      <a href="https://noro6.github.io/kc-web/" target="_blank" rel="noopener" class="footer-link">
+        kc-web（制空権シミュレータ v2）
+      </a>
+      <span class="footer-sep">|</span>
+      <a href="https://zekamashi.net/kancolle-kouryaku/new-ensei/" target="_blank" rel="noopener" class="footer-link">
+        ぜかましねっと — マンスリー遠征条件一覧
+      </a>
+      <span class="footer-sep">|</span>
+      <a href="https://zekamashi.net/kancolle-kouryaku/ensei-kihon/" target="_blank" rel="noopener" class="footer-link">
+        ぜかましねっと — 遠征の基礎知識
+      </a>
+      <span class="footer-sep">|</span>
+      <a href="https://github.com/KC3Kai/KC3Kai" target="_blank" rel="noopener" class="footer-link">
+        KC3Kai
+      </a>
+    </footer>
   </div>
 </template>
 
@@ -351,74 +427,53 @@ const kcwebSnippet = `(function() {
 
   // ShipMaster[]: .id .type .name .fire .antiAir .minAsw .maxAsw .minScout .maxScout
   const masterMap = new Map(store.state.ships.map(s => [s.id, s]));
-  // ItemMaster[]: .id .fire .antiAir .asw .scout
-  const itemMap = new Map(store.state.items.map(i => [i.id, i]));
+
+  // --- 大発動艇系装備可否判定 (カテゴリID = 24) ---
+  // store.state.shipTypes = api_mst_stype: { api_id: 艦種ID, api_equip_type: number[] }[]
+  // store.state.equipShips = api_mst_equip_ship: { [masterId]: { api_equip_type: { [catId]: itemIds[]|null } } }
+  const DAIHATSU_CAT = 24;
+  const stypeMap  = new Map((store.state.shipTypes || []).map(st => [st.api_id, st.api_equip_type || []]));
+  const equipShps = store.state.equipShips || {};
+  function canDaihatsu(masterId, shipType) {
+    if ((stypeMap.get(shipType) || []).includes(DAIHATSU_CAT)) return true;
+    const ov = equipShps[masterId];
+    return !!(ov?.api_equip_type && (DAIHATSU_CAT in ov.api_equip_type));
+  }
 
   // --- 所持艦娘全体 (state.shipStock: ShipStock[]) ---
-  // ShipStock: { id(masterId), uniqueId, level, improvement:{fire,antiAir,asw,...} }
   const stockList = store.state.shipStock;
   if (!stockList?.length) {
     return console.error('所持艦娘データ(shipStock)が0件です。kc-webで艦娘在庫を読み込んでいるか確認してください。');
   }
 
-  // --- saveData 編成から装備ステータスを収集 (uniqueId → 装備合計) ---
-  // saveDataに入っている艦娘のみ装備込みステータスが計算できる
-  const equipMap = new Map(); // uniqueId -> {fire, antiAir, asw, scout}
-  function collectEquip(node) {
-    if (!node?.isDirectory && node?.manager) {
-      try {
-        const m = JSON.parse(node.manager);
-        for (const f of m?.fleetInfo?.fleets ?? []) {
-          for (const s of f.ships ?? []) {
-            if (!s.i || !s.un || s.un <= 0 || equipMap.has(s.un)) continue;
-            let ef=0, eaa=0, easw=0, esc=0;
-            const slots = [...(s.is ?? [])];
-            if (s.ex) slots.push(s.ex);
-            for (const slot of slots) {
-              const im = itemMap.get(slot?.i);
-              if (!im) continue;
-              ef   += im.fire    ?? 0;
-              eaa  += im.antiAir ?? 0;
-              easw += im.asw     ?? 0;
-              esc  += im.scout   ?? 0;
-            }
-            equipMap.set(s.un, { fire:ef, antiAir:eaa, asw:easw, scout:esc });
-          }
-        }
-      } catch(e) {}
-    }
-    for (const c of node?.childItems ?? []) collectEquip(c);
-  }
-  collectEquip(store.state.saveData);
-
-  // --- 全所持艦娘を変換 ---
+  // --- 全所持艦娘を変換 (素ステータス + 近代化改修ボーナスのみ、装備は含まない) ---
   const ships = [];
   for (const stock of stockList) {
     const m   = masterMap.get(stock.id);
     const lv  = stock.level ?? 1;
     const imp = stock.improvement ?? {};
 
-    // 素ステータス + 近代化改修ボーナス
-    let fire    = (m ? m.fire    : 0) + (imp.fire    ?? 0);
-    let antiAir = (m ? m.antiAir : 0) + (imp.antiAir ?? 0);
-    let asw     = (m ? (m.minAsw   + Math.floor((m.maxAsw   - m.minAsw)   * lv / 99)) : 0) + (imp.asw ?? 0);
-    let scout   =  m ? (m.minScout + Math.floor((m.maxScout - m.minScout) * lv / 99)) : 0;
-
-    // saveData 編成に入っていれば装備補正を加算
-    const eq = equipMap.get(stock.uniqueId);
-    if (eq) { fire+=eq.fire; antiAir+=eq.antiAir; asw+=eq.asw; scout+=eq.scout; }
+    const fire    = (m ? m.fire    : 0) + (imp.fire    ?? 0);
+    const antiAir = (m ? m.antiAir : 0) + (imp.antiAir ?? 0);
+    const asw     = (m ? (m.minAsw   + Math.floor((m.maxAsw   - m.minAsw)   * lv / 99)) : 0) + (imp.asw ?? 0);
+    const scout   =  m ? (m.minScout + Math.floor((m.maxScout - m.minScout) * lv / 99)) : 0;
 
     ships.push({ type: TYPE[m?.type ?? 0] ?? 'DD', name: m?.name ?? ('艦#' + stock.id),
                  level: lv, fire, antiAir, asw, scout,
-                 fuel: m?.fuel ?? 0, ammo: m?.ammo ?? 0 });
+                 fuel: m?.fuel ?? 0, ammo: m?.ammo ?? 0,
+                 canDaihatsu: canDaihatsu(stock.id, m?.type ?? 0) });
   }
 
-  console.log(\`所持艦娘: \${ships.length}隻 (装備データあり: \${equipMap.size}隻)\`);
+  const daihatsuCount = ships.filter(s => s.canDaihatsu).length;
+  console.log(\`所持艦娘: \${ships.length}隻 (大発装備可: \${daihatsuCount}隻) ※素ステータス+近代化改修のみ\`);
   const json = JSON.stringify(ships, null, 2);
   console.log(json);
   try { copy(json); console.log('✓ クリップボードにコピーしました。JSONインポートタブに貼り付けてください。'); }
   catch(e) { console.log('↑ 上のJSONをコピーしてJSONインポートタブに貼り付けてください。'); }
 })();`
+
+// ブックマークレット URL (スニペットをそのまま javascript: プロトコルにエンコード)
+const bookmarkletUrl = computed(() => `javascript:${encodeURIComponent(kcwebSnippet)}`)
 
 function copySnippet() {
   navigator.clipboard.writeText(kcwebSnippet).then(() => {
@@ -454,45 +509,48 @@ function collectKcShips(node: SaveDataNode): RawKcShip[] {
 const FIREBASE_MASTER_URL = 'https://firebasestorage.googleapis.com/v0/b/development-74af0.appspot.com/o/master.json?alt=media'
 
 interface MasterShipRaw { id: number; type: number; name: string; fire: number; anti_air: number; min_asw: number; asw: number; min_scout: number; scout: number; fuel: number; ammo: number }
-interface MasterItemRaw { id: number; fire?: number; antiAir?: number; asw?: number; scout?: number }
+interface MasterShipTypeRaw { api_id: number; api_equip_type?: number[] }
+type MasterEquipShipRaw = Record<number, { api_equip_type?: Record<number, number[] | null> }>
 
 async function fetchKcwebMaster(): Promise<{
   shipMap: Map<number, MasterShipRaw>
-  itemMap: Map<number, MasterItemRaw>
+  canDaihatsuSet: Set<number>
 }> {
+  const DAIHATSU_CAT = 24
   const resp = await fetch(FIREBASE_MASTER_URL, { cache: 'force-cache' })
   if (!resp.ok) throw new Error(`Firebase master.json fetch failed: HTTP ${resp.status}`)
-  const json = await resp.json() as { ships?: MasterShipRaw[]; items?: MasterItemRaw[] }
+  const json = await resp.json() as {
+    ships?: MasterShipRaw[]
+    api_mst_stype?: MasterShipTypeRaw[]
+    api_mst_equip_ship?: MasterEquipShipRaw
+  }
   const shipMap = new Map((json.ships ?? []).map(s => [s.id, s]))
-  const itemMap = new Map((json.items ?? []).map(i => [i.id, i]))
-  return { shipMap, itemMap }
+
+  // 大発装備可否判定: 艦種レベル + 個別オーバーライドの両方をチェック
+  const stypeMap = new Map((json.api_mst_stype ?? []).map(st => [st.api_id, st.api_equip_type ?? []]))
+  const equipShipRaw = json.api_mst_equip_ship ?? {}
+  const canDaihatsuSet = new Set<number>()
+  for (const s of json.ships ?? []) {
+    const typeOk = (stypeMap.get(s.type) ?? []).includes(DAIHATSU_CAT)
+    const shipOk = DAIHATSU_CAT in (equipShipRaw[s.id]?.api_equip_type ?? {})
+    if (typeOk || shipOk) canDaihatsuSet.add(s.id)
+  }
+
+  return { shipMap, canDaihatsuSet }
 }
 
-function calcStatsFromRaw(
-  raw: RawKcShip,
-  shipMap: Map<number, MasterShipRaw>,
-  itemMap: Map<number, MasterItemRaw>,
-): ShipStats | undefined {
-  const sm = shipMap.get(raw.i)
-  if (!sm) return undefined
-  const lv = raw.lv ?? 1
-  // 素ステータス (MasterShip は snake_case: anti_air, min_asw, min_scout)
-  let fire    = sm.fire
-  let antiAir = sm.anti_air
-  let asw     = sm.min_asw   + Math.floor((sm.asw   - sm.min_asw)   * lv / 99)
-  let scout   = sm.min_scout + Math.floor((sm.scout - sm.min_scout) * lv / 99)
-  // 装備加算 (MasterItem は camelCase: antiAir)
-  const slots = [...(raw.is ?? [])]
-  if (raw.ex) slots.push(raw.ex)
-  for (const slot of slots) {
-    const im = itemMap.get(slot?.i ?? 0)
-    if (!im) continue
-    fire    += im.fire    ?? 0
-    antiAir += im.antiAir ?? 0
-    asw     += im.asw     ?? 0
-    scout   += im.scout   ?? 0
+// 素ステータスのみ計算 (装備は含まない)
+// MasterShip は snake_case: anti_air, min_asw, min_scout
+function calcBaseStats(
+  lv: number,
+  sm: MasterShipRaw,
+): ShipStats {
+  return {
+    fire:    sm.fire,
+    antiAir: sm.anti_air,
+    asw:     sm.min_asw   + Math.floor((sm.asw   - sm.min_asw)   * lv / 99),
+    scout:   sm.min_scout + Math.floor((sm.scout - sm.min_scout) * lv / 99),
   }
-  return { fire, antiAir, asw, scout }
 }
 
 async function importFromKcweb() {
@@ -519,18 +577,16 @@ async function importFromKcweb() {
       if (!seen.has(key)) seen.set(key, s)
     }
 
-    // 艦船+装備マスターを取得（Firebase → KC3Kai フォールバック）
-    kcwebStatus.value = '艦船・装備マスターを取得中...'
+    // 艦船マスターを取得（Firebase → KC3Kai フォールバック）
+    kcwebStatus.value = '艦船マスターを取得中...'
     let shipMap = new Map<number, MasterShipRaw>()
-    let itemMap = new Map<number, MasterItemRaw>()
-    let hasItems = false
+    let canDaihatsuSet = new Set<number>()
 
     try {
       const master = await fetchKcwebMaster()
       shipMap = master.shipMap
-      itemMap = master.itemMap
-      hasItems = itemMap.size > 0
-      kcwebStatus.value = `マスター取得完了 (艦船 ${shipMap.size}隻・装備 ${itemMap.size}種)`
+      canDaihatsuSet = master.canDaihatsuSet
+      kcwebStatus.value = `マスター取得完了 (艦船 ${shipMap.size}隻)`
     } catch {
       // Firebase 失敗 → KC3Kai から艦船のみ取得
       kcwebStatus.value = 'Firebase失敗、KC3Kaiから艦船マスターを取得中...'
@@ -551,34 +607,34 @@ async function importFromKcweb() {
             } catch { /* skip */ }
           }
         }
-        kcwebStatus.value = `⚠️ 艦船マスターのみ取得 (${shipMap.size}隻) — ステータスは未計算`
+        kcwebStatus.value = `⚠️ 艦船マスターのみ取得 (${shipMap.size}隻) — ステータス計算不可`
       } catch {
         kcwebStatus.value = '⚠️ マスター取得失敗 — 艦種を DD として仮インポート'
       }
     }
 
-    // OwnedShip に変換
+    // OwnedShip に変換 (素ステータスのみ、装備は含まない)
     let imported = 0
     for (const [, raw] of seen) {
       const sm = shipMap.get(raw.i)
-      const stats = hasItems ? calcStatsFromRaw(raw, shipMap, itemMap) : undefined
+      const lv = raw.lv ?? 1
+      const stats = sm ? calcBaseStats(lv, sm) : undefined
       ships.value.push({
         masterId: raw.i,
         uniqueId: (raw.un != null && raw.un > 0) ? raw.un : nextId++,
         shipTypeId: sm?.type ?? 2,
         name: sm?.name ?? `艦#${raw.i}`,
-        level: raw.lv ?? 1,
+        level: lv,
         stats,
         fuel: sm?.fuel,
         ammo: sm?.ammo,
+        canDaihatsu: canDaihatsuSet.has(raw.i),
       })
       imported++
     }
 
     kcwebSaveData.value = ''
-    kcwebStatus.value = hasItems
-      ? `✅ ${imported}隻をインポートしました（装備込みステータス計算済）`
-      : `✅ ${imported}隻をインポートしました（ステータス未計算）`
+    kcwebStatus.value = `✅ ${imported}隻をインポートしました（素ステータス+近代化改修のみ）`
     matchResult.value = null
   } catch (e) {
     kcwebError.value = e instanceof Error ? e.message : String(e)
@@ -649,6 +705,7 @@ function importFromJson() {
       const stats = [f, aa, as_, sc].every(v => !isNaN(v) && v >= 0) ? { fire: f, antiAir: aa, asw: as_, scout: sc } : undefined
       const fuel = entry.fuel != null && !isNaN(Number(entry.fuel)) ? Number(entry.fuel) : undefined
       const ammo = entry.ammo != null && !isNaN(Number(entry.ammo)) ? Number(entry.ammo) : undefined
+      const canDaihatsu = entry.canDaihatsu === true
       ships.value.push({
         masterId: 0,
         uniqueId: nextId++,
@@ -658,6 +715,7 @@ function importFromJson() {
         stats,
         fuel,
         ammo,
+        canDaihatsu,
       })
     }
     importJson.value = ''
@@ -666,6 +724,25 @@ function importFromJson() {
     importError.value = e instanceof Error ? e.message : String(e)
   }
 }
+
+// ── 艦種別グループ ──────────────────────────────────────────────────────────
+const SHIP_TYPE_ORDER = [2, 3, 4, 5, 6, 7, 11, 18, 8, 9, 10, 13, 14, 16, 20, 1, 21]
+// DD, CL, CLT, CA, CAV, CVL, CV, CVB, FBB, BB, BBV, SS, SSV, AV, 潜母艦, DE, CT
+
+const shipsByType = computed(() => {
+  const groups = new Map<number, OwnedShip[]>()
+  for (const ship of ships.value) {
+    if (!groups.has(ship.shipTypeId)) groups.set(ship.shipTypeId, [])
+    groups.get(ship.shipTypeId)!.push(ship)
+  }
+  const ordered = SHIP_TYPE_ORDER
+    .filter(id => groups.has(id))
+    .map(id => [id, groups.get(id)!] as [number, OwnedShip[]])
+  for (const [id, list] of groups) {
+    if (!SHIP_TYPE_ORDER.includes(id)) ordered.push([id, list])
+  }
+  return ordered
+})
 
 // ── 遠征グループ ──────────────────────────────────────────────────────────
 const WORLD_LABELS: Record<number, string> = {
@@ -833,11 +910,34 @@ function statusLabel(meets: boolean | null) {
   display: flex; justify-content: space-between; align-items: center;
   font-size: 0.8rem; color: #7a9ab8; margin: 8px 0 4px;
 }
-.ship-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.ship-list { max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
 .empty-msg { text-align: center; color: #4a6a8a; font-size: 0.8rem; padding: 16px; }
+
+/* ── 艦種アコーディオン ──────────────────────────────── */
+.ship-type-group {
+  border: 1px solid #253550; border-radius: 6px; overflow: hidden;
+}
+.ship-type-summary {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 8px; background: #1a2640; cursor: pointer;
+  list-style: none; user-select: none;
+  font-size: 0.8rem;
+}
+.ship-type-summary::-webkit-details-marker { display: none; }
+.ship-type-summary::before {
+  content: '▶'; font-size: 0.6rem; color: #5a7a9a;
+  transition: transform 0.15s; flex-shrink: 0;
+}
+details[open] > .ship-type-summary::before { transform: rotate(90deg); }
+.ship-type-summary:hover { background: #202e4a; }
+.summary-badge { flex-shrink: 0; }
+.summary-count { color: #a0c0e0; font-weight: 600; }
+.summary-excluded { color: #c0804a; font-size: 0.75rem; margin-left: auto; }
+
+.ship-type-body { display: flex; flex-direction: column; gap: 2px; padding: 4px; background: #141c2e; }
 .ship-item {
   display: flex; align-items: center; gap: 6px;
-  background: #151e30; border: 1px solid #253550; border-radius: 5px; padding: 5px 8px;
+  background: #151e30; border: 1px solid #253550; border-radius: 4px; padding: 4px 8px;
   font-size: 0.8rem;
 }
 .ship-type-badge {
@@ -854,6 +954,24 @@ function statusLabel(meets: boolean | null) {
   padding: 0 2px; line-height: 1; flex-shrink: 0;
 }
 .btn-remove:hover { color: #e07070; }
+
+/* ── 大発バッジ ──────────────────────────────────────── */
+.daihatsu-badge {
+  flex-shrink: 0;
+  font-size: 0.65rem; font-weight: 700;
+  padding: 1px 5px; border-radius: 3px;
+  background: rgba(80, 160, 100, 0.2);
+  border: 1px solid #2a7a50;
+  color: #60c080;
+}
+.daihatsu-mark {
+  font-size: 0.62rem; font-weight: 700;
+  padding: 1px 4px; border-radius: 3px;
+  background: rgba(80, 160, 100, 0.15);
+  border: 1px solid #2a7a50;
+  color: #50b070;
+  white-space: nowrap;
+}
 
 /* ── 除外トグル ──────────────────────────────────────── */
 .excluded-count { color: #c0804a; font-size: 0.8rem; }
@@ -984,6 +1102,65 @@ function statusLabel(meets: boolean | null) {
 .consumption-note  { color: #5a7090; font-size: 0.72rem; margin-left: auto; }
 
 /* ── kc-web インポート ──────────────────────────────────── */
+.kcweb-method { margin-bottom: 4px; }
+.kcweb-method--alt {
+  border: 1px solid #253550; border-radius: 6px; overflow: hidden;
+}
+.kcweb-method--alt > summary {
+  padding: 6px 10px; background: #1a2640; cursor: pointer; list-style: none;
+}
+.kcweb-method--alt > summary::-webkit-details-marker { display: none; }
+.kcweb-method--alt > summary::before {
+  content: '▶'; font-size: 0.6rem; color: #5a7a9a; margin-right: 6px;
+  transition: transform 0.15s; display: inline-block;
+}
+details[open].kcweb-method--alt > summary::before { transform: rotate(90deg); }
+.kcweb-method--alt > summary:hover { background: #202e4a; }
+details[open].kcweb-method--alt > .kcweb-steps,
+details[open].kcweb-method--alt > .savedata-cmd,
+details[open].kcweb-method--alt > .import-textarea,
+details[open].kcweb-method--alt > .error-msg,
+details[open].kcweb-method--alt > .status-msg,
+details[open].kcweb-method--alt > .btn { padding: 8px 10px; }
+
+.kcweb-method-title { font-size: 0.82rem; font-weight: 700; color: #a0c0e0; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.method-badge {
+  font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 3px;
+  background: rgba(60,160,100,0.2); border: 1px solid #2a7a50; color: #60c080;
+}
+.method-badge--alt {
+  background: rgba(100,120,160,0.2); border-color: #3a5a8a; color: #7a9ab8;
+}
+
+.kcweb-steps { padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; color: #a0b8d0; }
+.kcweb-steps li { line-height: 1.5; }
+.step-sub { margin-top: 4px; padding-left: 16px; display: flex; flex-direction: column; gap: 2px; color: #7a9ab8; }
+.step-note { margin-top: 4px; font-size: 0.72rem; color: #7a8a6a; }
+kbd {
+  display: inline-block; padding: 0 5px; background: #1a2a3a; border: 1px solid #3a5a7a;
+  border-radius: 3px; font-family: monospace; font-size: 0.75rem; color: #90b8d8;
+}
+
+.bookmarklet-wrap { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
+.bookmarklet-link {
+  display: inline-block; padding: 5px 12px;
+  background: linear-gradient(135deg, #1a4a7a, #2a6aaa);
+  border: 1px solid #3a7aca; border-radius: 5px;
+  color: #d0eaff; font-size: 0.82rem; font-weight: 700;
+  text-decoration: none; cursor: grab; user-select: none;
+  transition: all 0.15s;
+}
+.bookmarklet-link:hover { background: linear-gradient(135deg, #2a5a8a, #3a7aba); }
+.bookmarklet-hint { font-size: 0.72rem; color: #5a8ab0; }
+
+.savedata-cmd {
+  display: block; font-size: 0.68rem; background: #111824; border: 1px solid #2e3f60;
+  border-radius: 4px; padding: 6px 8px; color: #a0c8a0; overflow-x: auto;
+  white-space: pre; margin: 6px 0; font-family: monospace;
+}
+.mt-8 { margin-top: 8px; }
+
+
 .snippet-container {
   position: relative; margin-bottom: 8px;
 }
@@ -1010,4 +1187,20 @@ function statusLabel(meets: boolean | null) {
 }
 .import-divider span { background: #1e2840; padding: 0 8px; position: relative; }
 .status-msg { color: #70b090; font-size: 0.8rem; margin: 4px 0; }
+
+/* ── フッター ──────────────────────────────────────────── */
+.app-footer {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 10px 20px;
+  background: #0d1520;
+  border-top: 1px solid #1e2e48;
+  font-size: 0.72rem;
+}
+.footer-label { color: #4a6a8a; font-weight: 600; margin-right: 2px; }
+.footer-sep { color: #2a3a50; }
+.footer-link {
+  color: #5a8ab0; text-decoration: none;
+  transition: color 0.15s;
+}
+.footer-link:hover { color: #8abce0; text-decoration: underline; }
 </style>
