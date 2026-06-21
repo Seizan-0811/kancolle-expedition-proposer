@@ -260,11 +260,10 @@ export function matchExpeditions(
         exp.minDaihatsu ?? 0,
       ).length;
     }
-    // 火力・対潜要件が高い遠征は候補数スコアを減らして優先処理（高ステータス艦を先に確保）
+    // 火力要件が高い遠征は候補数スコアを減らして優先処理（高火力艦を先に確保）
     const fireReq = exp.statRequirements?.fire ?? 0;
-    const aswReq  = exp.statRequirements?.asw  ?? 0;
-    if (fireReq >= 500 || aswReq >= 200) score = Math.floor(score * 0.3);
-    else if (fireReq >= 300 || aswReq >= 100) score = Math.floor(score * 0.6);
+    if (fireReq >= 500) score = Math.floor(score * 0.3);
+    else if (fireReq >= 300) score = Math.floor(score * 0.6);
     return { expedition: exp, score };
   });
   // 候補が少ない (難しい) 遠征を先に処理する
@@ -277,23 +276,15 @@ export function matchExpeditions(
 
   for (const { expedition } of ranked) {
     // 未割当艦娘のみに絞り込む
-    // ソート: 高コスト艦 (戦艦・正規/装甲空母) を後回しにし、同グループ内は
-    //         火力・対潜の複合スコア降順（それぞれ遠征要件で正規化して合算）
-    // → バックトラックが軽空母・駆逐等を先に試すため、最初の20候補が低コスト寄りになる
-    const fireReq = expedition.statRequirements?.fire ?? 0;
-    const aswReq  = expedition.statRequirements?.asw  ?? 0;
+    // ソート: 高コスト艦 (戦艦・正規/装甲空母) を後回しにし、同グループ内は火力降順
+    // → 高火力＝高レベル傾向があり、バックトラックが最初に試す候補が有効になりやすい
     const remaining = availableShips
       .filter((s) => !assignedShipIds.has(shipKey(s)))
       .sort((a, b) => {
         const expA = EXPENSIVE_TYPES.has(a.shipTypeId) ? 1 : 0;
         const expB = EXPENSIVE_TYPES.has(b.shipTypeId) ? 1 : 0;
         if (expA !== expB) return expA - expB; // 高コスト艦を後ろへ
-        // 同グループ内: 火力＋対潜の複合スコア降順
-        const scoreA = (fireReq > 0 ? ((a.stats?.fire ?? 0) + (EQUIPMENT_FIRE_BONUS[a.shipTypeId] ?? 0)) / fireReq * 1.5 : 0)
-                     + (aswReq  > 0 ? ((a.stats?.asw  ?? 0) + (EQUIPMENT_ASW_BONUS [a.shipTypeId] ?? 0)) / aswReq        : 0);
-        const scoreB = (fireReq > 0 ? ((b.stats?.fire ?? 0) + (EQUIPMENT_FIRE_BONUS[b.shipTypeId] ?? 0)) / fireReq * 1.5 : 0)
-                     + (aswReq  > 0 ? ((b.stats?.asw  ?? 0) + (EQUIPMENT_ASW_BONUS [b.shipTypeId] ?? 0)) / aswReq        : 0);
-        return scoreB - scoreA;
+        return (b.stats?.fire ?? 0) - (a.stats?.fire ?? 0); // 同グループ内は火力降順
       });
 
     // 残り艦娘から候補を収集 (大発制約あり)
@@ -343,7 +334,8 @@ export function matchExpeditions(
     //   3. 高コスト艦あり同士: 燃費昇順 (消費の少ない艦を優先) → 火力比降順
     // パフォーマンス: ソート前にキーを一括計算してキャッシュする
     // EXPENSIVE_TYPES はモジュールレベルで定義済み
-    // fireReq / aswReq はこのループの先頭で宣言済み
+    const fireReq = expedition.statRequirements?.fire ?? 0;
+    const aswReq  = expedition.statRequirements?.asw  ?? 0;
     const computeStatRatio = (fleet: OwnedShip[]) => {
       const stats = fleet.map((s) => s.stats).filter((s): s is ShipStats => s != null);
       if (stats.length !== fleet.length) return 0;
