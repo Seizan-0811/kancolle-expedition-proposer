@@ -89,7 +89,7 @@
                 </div>
                 <p class="step-note">ブックマークバーが見えない場合: Chrome は Ctrl+Shift+B (Mac: ⌘+Shift+B) で表示できます</p>
               </li>
-              <li><a href="https://noro6.github.io/kc-web/" target="_blank" rel="noopener">kc-web（制空権シミュレータ）</a>をブラウザで開き、艦娘在庫を読み込む</li>
+              <li><a href="https://noro6.github.io/kc-web/" target="_blank" rel="noopener">kc-web（制空権シミュレータ）</a>をブラウザで開き、ブックマークレットを実行する</li>
               <li>kc-web を開いたまま、ブックマークバーの「kc-web 艦娘データ取得」をクリック</li>
               <li>「JSONインポート」タブに切り替えて、クリップボードの内容を貼り付けてインポート</li>
             </ol>
@@ -950,7 +950,7 @@ function statusLabel(meets: boolean | null) {
   border-radius: 8px;
   padding: 16px;
 }
-.panel-left { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+.panel-left { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; overflow-y: auto; }
 .panel-right { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: hidden; }
 .panel-title {
   font-size: 1rem;
