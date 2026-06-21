@@ -14,7 +14,7 @@ export const SHIP_TYPE_IDS: Record<ShipTypeAbbr, number[]> = {
   CAV:  [6],
   CVL:  [7],
   ECVL: [7],         // 護衛空母 (kc-web では CVL 相当として扱う)
-  CV:   [7, 11, 18], // 空母全般 (水母含む便宜上; 遠征44では CV=水母/護衛空母もOK)
+  CV:   [7, 11, 16, 18], // 空母全般 (遠征44では CV=水母/護衛空母もOK)
   SS:   [13, 14],    // 潜水・潜水空母
   SSV:  [14],
   AV:   [16],

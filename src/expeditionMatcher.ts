@@ -186,9 +186,13 @@ function findCandidates(
       if (usedIndices.has(i)) continue;
       chosen.push(i);
       usedIndices.add(i);
+      const prevCount = results.length;
       fillFreeSlots(need - 1, maxExtra - 1);
       chosen.pop();
       usedIndices.delete(i);
+      // 自由枠は必須枠の組み合わせ多様性を確保するため 1 件見つかれば終了
+      // → 各必須枠組み合わせから最大 1 候補を生成し、より多くの必須枠パターンを試す
+      if (results.length > prevCount) return;
     }
   }
 
