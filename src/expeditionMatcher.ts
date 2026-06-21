@@ -50,6 +50,33 @@ const EQUIPMENT_FIRE_BONUS: Record<number, number> = {
   20: 0,  // AS  潜水母艦
   21: 25, // CT  練巡
 };
+
+// ---------------------------------------------------------------------------
+// 艦種別推定装備対潜ボーナス
+// ---------------------------------------------------------------------------
+/**
+ * 遠征要件の対潜チェック時に加算する推定装備ボーナス。
+ * 艦種ごとの典型的な対潜装備（ソナー×2＋爆雷など）による上乗せ分を見込む。
+ */
+const EQUIPMENT_ASW_BONUS: Record<number, number> = {
+  1:  30, // DE  海防艦   (ソナー×2＋爆雷 程度)
+  2:  35, // DD  駆逐艦   (ソナー×2＋爆雷 程度)
+  3:  20, // CL  軽巡     (ソナー×1〜2)
+  4:  15, // CLT 雷巡
+  5:  10, // CA  重巡     (ソナー×1 程度)
+  6:  10, // CAV 航巡
+  7:  15, // CVL 軽母     (対潜哨戒機)
+  8:   0, // FBB 高速戦艦
+  9:   0, // BB  戦艦
+  10: 10, // BBV 航戦     (水上機による対潜)
+  11:  0, // CV  空母
+  13: 20, // SS  潜水      (潜水艦搭載電探&水中探信儀 等 ×1〜2)
+  14: 20, // SSV 潜水空母 (同上)
+  16: 10, // AV  水母
+  18:  0, // CVB 装甲空母
+  20: 20, // AS  潜水母艦 (ソナー系装備可)
+  21: 15, // CT  練巡
+};
 import { SHIP_TYPE_IDS } from './types';
 import { sumFleetStats, meetsStats } from './shipStats';
 
@@ -233,10 +260,11 @@ export function matchExpeditions(
         exp.minDaihatsu ?? 0,
       ).length;
     }
-    // 火力要件が高い遠征は候補数スコアを減らして優先処理（高火力艦を先に確保）
+    // 火力・対潜要件が高い遠征は候補数スコアを減らして優先処理（高ステータス艦を先に確保）
     const fireReq = exp.statRequirements?.fire ?? 0;
-    if (fireReq >= 500) score = Math.floor(score * 0.3);
-    else if (fireReq >= 300) score = Math.floor(score * 0.6);
+    const aswReq  = exp.statRequirements?.asw  ?? 0;
+    if (fireReq >= 500 || aswReq >= 200) score = Math.floor(score * 0.3);
+    else if (fireReq >= 300 || aswReq >= 100) score = Math.floor(score * 0.6);
     return { expedition: exp, score };
   });
   // 候補が少ない (難しい) 遠征を先に処理する
@@ -249,15 +277,23 @@ export function matchExpeditions(
 
   for (const { expedition } of ranked) {
     // 未割当艦娘のみに絞り込む
-    // ソート: 高コスト艦 (戦艦・正規/装甲空母) を後回しにし、同グループ内は火力降順
+    // ソート: 高コスト艦 (戦艦・正規/装甲空母) を後回しにし、同グループ内は
+    //         火力・対潜の複合スコア降順（それぞれ遠征要件で正規化して合算）
     // → バックトラックが軽空母・駆逐等を先に試すため、最初の20候補が低コスト寄りになる
+    const fireReq = expedition.statRequirements?.fire ?? 0;
+    const aswReq  = expedition.statRequirements?.asw  ?? 0;
     const remaining = availableShips
       .filter((s) => !assignedShipIds.has(shipKey(s)))
       .sort((a, b) => {
         const expA = EXPENSIVE_TYPES.has(a.shipTypeId) ? 1 : 0;
         const expB = EXPENSIVE_TYPES.has(b.shipTypeId) ? 1 : 0;
         if (expA !== expB) return expA - expB; // 高コスト艦を後ろへ
-        return (b.stats?.fire ?? 0) - (a.stats?.fire ?? 0); // 同グループ内は火力降順
+        // 同グループ内: 火力＋対潜の複合スコア降順
+        const scoreA = (fireReq > 0 ? ((a.stats?.fire ?? 0) + (EQUIPMENT_FIRE_BONUS[a.shipTypeId] ?? 0)) / fireReq * 1.5 : 0)
+                     + (aswReq  > 0 ? ((a.stats?.asw  ?? 0) + (EQUIPMENT_ASW_BONUS [a.shipTypeId] ?? 0)) / aswReq        : 0);
+        const scoreB = (fireReq > 0 ? ((b.stats?.fire ?? 0) + (EQUIPMENT_FIRE_BONUS[b.shipTypeId] ?? 0)) / fireReq * 1.5 : 0)
+                     + (aswReq  > 0 ? ((b.stats?.asw  ?? 0) + (EQUIPMENT_ASW_BONUS [b.shipTypeId] ?? 0)) / aswReq        : 0);
+        return scoreB - scoreA;
       });
 
     // 残り艦娘から候補を収集 (大発制約あり)
@@ -306,14 +342,23 @@ export function matchExpeditions(
     //   2. 高コスト艦なし同士: 有効火力比降順 → 燃費昇順
     //   3. 高コスト艦あり同士: 燃費昇順 (消費の少ない艦を優先) → 火力比降順
     // パフォーマンス: ソート前にキーを一括計算してキャッシュする
-    const fireReq = expedition.statRequirements?.fire ?? 0;
     // EXPENSIVE_TYPES はモジュールレベルで定義済み
-    const computeFireRatio = (fleet: OwnedShip[]) => {
-      if (fireReq === 0) return 1;
+    // fireReq / aswReq はこのループの先頭で宣言済み
+    const computeStatRatio = (fleet: OwnedShip[]) => {
       const stats = fleet.map((s) => s.stats).filter((s): s is ShipStats => s != null);
       if (stats.length !== fleet.length) return 0;
-      const bonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
-      return (sumFleetStats(stats).fire + bonus) / fireReq;
+      const fleetStats = sumFleetStats(stats);
+      let ratio = 0;
+      if (fireReq > 0) {
+        const bonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
+        ratio += (fleetStats.fire + bonus) / fireReq * 1.5;
+      }
+      if (aswReq > 0) {
+        const bonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_ASW_BONUS[s.shipTypeId] ?? 0), 0);
+        ratio += (fleetStats.asw + bonus) / aswReq;
+      }
+      if (fireReq === 0 && aswReq === 0) return 1;
+      return ratio;
     };
     const keys = allCandidates.map((fleet) => ({
       fleet,
@@ -321,20 +366,20 @@ export function matchExpeditions(
       fuel: fleet.every((s) => s.fuel != null)
         ? fleet.reduce((acc, s) => acc + s.fuel!, 0)
         : Infinity,
-      fireRatio: computeFireRatio(fleet),
+      statRatio: computeStatRatio(fleet),
     }));
     keys.sort((a, b) => {
       // 高コスト艦なしを優先
       if (a.hasExpensive !== b.hasExpensive) return a.hasExpensive - b.hasExpensive;
       if (a.hasExpensive === 0) {
-        // 両方高コスト艦なし: 火力比降順 → 燃費昇順
-        const diff = b.fireRatio - a.fireRatio;
+        // 両方高コスト艦なし: 複合スタット比降順 → 燃費昇順
+        const diff = b.statRatio - a.statRatio;
         if (Math.abs(diff) > 0.001) return diff;
         return a.fuel - b.fuel;
       } else {
-        // 両方高コスト艦あり: 燃費昇順 → 火力比降順
+        // 両方高コスト艦あり: 燃費昇順 → 複合スタット比降順
         if (a.fuel !== b.fuel) return a.fuel - b.fuel;
-        return b.fireRatio - a.fireRatio;
+        return b.statRatio - a.statRatio;
       }
     });
     allCandidates = keys.map((k) => k.fleet);
@@ -359,9 +404,12 @@ export function matchExpeditions(
     // ステータス集計
     const statsList = chosen.map((s) => s.stats).filter((s): s is ShipStats => s != null);
     const totalStats = statsList.length === chosen.length ? sumFleetStats(statsList) : null;
-    // 推定装備火力ボーナスを加味した有効火力で要件チェック (表示は素ステータスのまま)
+    // 推定装備ボーナス（火力・対潜）を加味した有効ステータスで要件チェック (表示は素ステータスのまま)
     const equipFireBonus = chosen.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
-    const effectiveStats = totalStats ? { ...totalStats, fire: totalStats.fire + equipFireBonus } : null;
+    const equipAswBonus  = chosen.reduce((sum, s) => sum + (EQUIPMENT_ASW_BONUS [s.shipTypeId] ?? 0), 0);
+    const effectiveStats = totalStats
+      ? { ...totalStats, fire: totalStats.fire + equipFireBonus, asw: totalStats.asw + equipAswBonus }
+      : null;
     const meetsStat = effectiveStats ? meetsStats(effectiveStats, expedition.statRequirements) : null;
 
     // 燃料・弾薬消費量 (全艦の値が揃っている場合のみ計算)
@@ -428,7 +476,11 @@ export function suggestForOneExpedition(
     if (statsList.length === fleet.length) {
       totalStats = sumFleetStats(statsList);
       const equipFireBonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
-      meetsStat = meetsStats({ ...totalStats, fire: totalStats.fire + equipFireBonus }, expedition.statRequirements);
+      const equipAswBonus  = fleet.reduce((sum, s) => sum + (EQUIPMENT_ASW_BONUS [s.shipTypeId] ?? 0), 0);
+      meetsStat = meetsStats(
+        { ...totalStats, fire: totalStats.fire + equipFireBonus, asw: totalStats.asw + equipAswBonus },
+        expedition.statRequirements,
+      );
     }
     const fuelList = fleet.map((s) => s.fuel).filter((f): f is number => f != null);
     const ammoList = fleet.map((s) => s.ammo).filter((a): a is number => a != null);
