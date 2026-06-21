@@ -387,14 +387,15 @@ const TYPE_COLORS: Record<number, string> = {
   1: '#4a9e8a', 2: '#3a7bd5', 3: '#8a6fb5', 4: '#c0605a',
   5: '#8b5a2b', 6: '#5a8b5a', 7: '#d4ac0d', 8: '#7d6b8a',
   9: '#6b7d8a', 10: '#8a7d6b', 11: '#c47c0e', 13: '#3a7d7d',
-  14: '#4a8d8d', 16: '#5a8baa', 18: '#c47c0e', 20: '#7d5a3a', 21: '#8a6fb5',
+  14: '#4a8d8d', 15: '#8a6a3a', 16: '#5a8baa', 17: '#6b8a3a',
+  18: '#c47c0e', 20: '#7d5a3a', 21: '#8a6fb5', 22: '#4a6a8a',
 }
 
 const TYPE_LABELS: Record<number, string> = {
   1: '海防', 2: '駆逐', 3: '軽巡', 4: '雷巡', 5: '重巡',
   6: '航巡', 7: '軽母', 8: '高戦', 9: '戦艦', 10: '航戦',
-  11: '空母', 13: '潜水', 14: '潜母', 16: '水母', 18: '装甲母',
-  20: '潜母艦', 21: '練巡',
+  11: '空母', 13: '潜水', 14: '潜母', 15: '補給艦', 16: '水母',
+  17: '揚陸艦', 18: '装甲母', 20: '潜母艦', 21: '練巡', 22: '工作艦',
 }
 
 function typeColor(typeId: number) { return TYPE_COLORS[typeId] ?? '#555' }
@@ -507,7 +508,7 @@ const kcwebSnippet = `(async function() {
   // notes/kc-web-data-format.md の SHIP_TYPE enum に準拠
   const TYPE = {1:'DE',2:'DD',3:'CL',4:'CLT',5:'CA',6:'CAV',
                 7:'CVL',8:'FBB',9:'BB',10:'BBV',11:'CV',
-                13:'SS',14:'SSV',16:'AV',18:'CVB',20:'AS',21:'CT'};
+                13:'SS',14:'SSV',15:'AO',16:'AV',17:'LHA',18:'CVB',20:'AS',21:'CT',22:'AR'};
 
   // Vuex ストアを探す (Vue 2 / Vue 3 / DOM探索の3段階)
   function findStore() {
@@ -802,7 +803,7 @@ function clearShips() {
 const TYPE_MAP: Record<string, number> = {
   DE: 1, DD: 2, CL: 3, CLT: 4, CA: 5, CAV: 6, CVL: 7,
   FBB: 8, BB: 9, BBV: 10, CV: 11, SS: 13, SSV: 14,
-  AV: 16, CVB: 18, AS: 20, CT: 21,
+  AO: 15, AV: 16, LHA: 17, CVB: 18, AS: 20, CT: 21, AR: 22,
 }
 
 function importFromJson() {
@@ -839,8 +840,8 @@ function importFromJson() {
 }
 
 // ── 艦種別グループ ──────────────────────────────────────────────────────────
-const SHIP_TYPE_ORDER = [2, 3, 4, 5, 6, 7, 11, 18, 8, 9, 10, 13, 14, 16, 20, 1, 21]
-// DD, CL, CLT, CA, CAV, CVL, CV, CVB, FBB, BB, BBV, SS, SSV, AV, 潜母艦, DE, CT
+const SHIP_TYPE_ORDER = [2, 3, 4, 5, 6, 7, 11, 18, 8, 9, 10, 13, 14, 16, 20, 1, 21, 15, 17, 22]
+// DD, CL, CLT, CA, CAV, CVL, CV, CVB, FBB, BB, BBV, SS, SSV, AV, 潜母艦, DE, CT, 補給艦, 揚陸艦, 工作艦
 
 const shipsByType = computed(() => {
   const groups = new Map<number, OwnedShip[]>()
