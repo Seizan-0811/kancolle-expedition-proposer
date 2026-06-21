@@ -54,6 +54,16 @@ import { SHIP_TYPE_IDS } from './types';
 import { sumFleetStats, meetsStats } from './shipStats';
 
 // ---------------------------------------------------------------------------
+// 高コスト艦種 (燃費が高いため可能な限り避ける)
+// ---------------------------------------------------------------------------
+/**
+ * FBB=8, BB=9, BBV=10: 戦艦系
+ * CV=11, CVB=18: 正規空母・装甲空母
+ * CVL(7)・AV(16) は低コストとして扱い、同じスロットを埋められる場合に優先する
+ */
+const EXPENSIVE_TYPES = new Set([8, 9, 10, 11, 18]);
+
+// ---------------------------------------------------------------------------
 // 艦種判定ヘルパー
 // ---------------------------------------------------------------------------
 
@@ -239,11 +249,16 @@ export function matchExpeditions(
 
   for (const { expedition } of ranked) {
     // 未割当艦娘のみに絞り込む
-    // 火力の高い艦が先に試されるよう素ステータス火力の降順でソート
-    // → findCandidates のバックトラックで最初に見つかる20候補が高火力寄りになる
+    // ソート: 高コスト艦 (戦艦・正規/装甲空母) を後回しにし、同グループ内は火力降順
+    // → バックトラックが軽空母・駆逐等を先に試すため、最初の20候補が低コスト寄りになる
     const remaining = availableShips
       .filter((s) => !assignedShipIds.has(shipKey(s)))
-      .sort((a, b) => (b.stats?.fire ?? 0) - (a.stats?.fire ?? 0));
+      .sort((a, b) => {
+        const expA = EXPENSIVE_TYPES.has(a.shipTypeId) ? 1 : 0;
+        const expB = EXPENSIVE_TYPES.has(b.shipTypeId) ? 1 : 0;
+        if (expA !== expB) return expA - expB; // 高コスト艦を後ろへ
+        return (b.stats?.fire ?? 0) - (a.stats?.fire ?? 0); // 同グループ内は火力降順
+      });
 
     // 残り艦娘から候補を収集 (大発制約あり)
     // → 制約を満たす候補がなければ制約なしにフォールバック
@@ -292,9 +307,7 @@ export function matchExpeditions(
     //   3. 高コスト艦あり同士: 燃費昇順 (消費の少ない艦を優先) → 火力比降順
     // パフォーマンス: ソート前にキーを一括計算してキャッシュする
     const fireReq = expedition.statRequirements?.fire ?? 0;
-    // 高コスト艦種: FBB=8, BB=9, BBV=10, CV=11, CVB=18
-    // CVL(7)・AV(16) は低コストとして扱い、CVスロットに優先的に充てる
-    const EXPENSIVE_TYPES = new Set([8, 9, 10, 11, 18]);
+    // EXPENSIVE_TYPES はモジュールレベルで定義済み
     const computeFireRatio = (fleet: OwnedShip[]) => {
       if (fireReq === 0) return 1;
       const stats = fleet.map((s) => s.stats).filter((s): s is ShipStats => s != null);
