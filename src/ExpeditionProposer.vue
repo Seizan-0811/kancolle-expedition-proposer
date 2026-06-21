@@ -89,8 +89,8 @@
                 </div>
                 <p class="step-note">ブックマークバーが見えない場合: Chrome は Ctrl+Shift+B (Mac: ⌘+Shift+B) で表示できます</p>
               </li>
-              <li>kc-web をブラウザで開く</li>
-              <li>ブックマークバーの「kc-web 艦娘データ取得」をクリック</li>
+              <li><a href="https://noro6.github.io/kc-web/" target="_blank" rel="noopener">kc-web（制空権シミュレータ）</a>をブラウザで開き、艦娘在庫を読み込む</li>
+              <li>kc-web を開いたまま、ブックマークバーの「kc-web 艦娘データ取得」をクリック</li>
               <li>「JSONインポート」タブに切り替えて、クリップボードの内容を貼り付けてインポート</li>
             </ol>
           </div>
