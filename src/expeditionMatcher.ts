@@ -130,6 +130,11 @@ function findCandidates(
   minDaihatsu = 0,
 ): OwnedShip[][] {
   const results: OwnedShip[][] = [];
+  // 候補が 1 件も見つからない場合でもバックトラックが全組み合わせを走破しないよう
+  // イテレーション上限を設ける。有効な編成が存在する場合は先頭候補がすぐ見つかる
+  // （残艦娘は火力降順ソート済み）ため、上限に達することは通常ない。
+  let iterations = 0;
+  const MAX_ITER = 100_000;
 
   // 必須艦種エントリをリストに展開する (複数必要な艦種は複数エントリ)
   const required: string[] = [];
@@ -148,6 +153,7 @@ function findCandidates(
 
   function backtrack(reqIdx: number): void {
     if (results.length >= maxResults) return;
+    if (++iterations > MAX_ITER) return;
 
     if (reqIdx === required.length) {
       // 必須艦種がすべて確定 → 自由枠を埋めて最低艦数を確保
@@ -165,6 +171,7 @@ function findCandidates(
     const abbr = required[reqIdx];
     for (let i = 0; i < ships.length; i++) {
       if (results.length >= maxResults) return;
+      if (iterations > MAX_ITER) return;
       if (usedIndices.has(i)) continue;
       if (!matchesShipTypeAbbr(ships[i], abbr)) continue;
       chosen.push(i);
@@ -181,8 +188,10 @@ function findCandidates(
       return;
     }
     if (maxExtra <= 0) return; // これ以上追加できない
+    if (iterations > MAX_ITER) return;
     for (let i = 0; i < ships.length; i++) {
       if (results.length >= maxResults) return;
+      if (iterations > MAX_ITER) return;
       if (usedIndices.has(i)) continue;
       chosen.push(i);
       usedIndices.add(i);
