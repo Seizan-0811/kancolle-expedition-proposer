@@ -350,7 +350,8 @@ export function matchExpeditions(
         ratio += (fleetStats.fire + bonus) / fireReq * 1.5;
       }
       if (aswReq > 0) {
-        const bonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_ASW_BONUS[s.shipTypeId] ?? 0), 0);
+        const bonus = fleet.reduce((sum, s) =>
+          (s.stats?.asw ?? 0) === 0 ? sum : sum + (EQUIPMENT_ASW_BONUS[s.shipTypeId] ?? 0), 0);
         ratio += (fleetStats.asw + bonus) / aswReq;
       }
       if (fireReq === 0 && aswReq === 0) return 1;
@@ -402,7 +403,8 @@ export function matchExpeditions(
     const totalStats = statsList.length === chosen.length ? sumFleetStats(statsList) : null;
     // 推定装備ボーナス（火力・対潜）を加味した有効ステータスで要件チェック (表示は素ステータスのまま)
     const equipFireBonus = chosen.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
-    const equipAswBonus  = chosen.reduce((sum, s) => sum + (EQUIPMENT_ASW_BONUS [s.shipTypeId] ?? 0), 0);
+    const equipAswBonus  = chosen.reduce((sum, s) =>
+      (s.stats?.asw ?? 0) === 0 ? sum : sum + (EQUIPMENT_ASW_BONUS[s.shipTypeId] ?? 0), 0);
     const effectiveStats = totalStats
       ? { ...totalStats, fire: totalStats.fire + equipFireBonus, asw: totalStats.asw + equipAswBonus }
       : null;
@@ -472,7 +474,8 @@ export function suggestForOneExpedition(
     if (statsList.length === fleet.length) {
       totalStats = sumFleetStats(statsList);
       const equipFireBonus = fleet.reduce((sum, s) => sum + (EQUIPMENT_FIRE_BONUS[s.shipTypeId] ?? 0), 0);
-      const equipAswBonus  = fleet.reduce((sum, s) => sum + (EQUIPMENT_ASW_BONUS [s.shipTypeId] ?? 0), 0);
+      const equipAswBonus  = fleet.reduce((sum, s) =>
+        (s.stats?.asw ?? 0) === 0 ? sum : sum + (EQUIPMENT_ASW_BONUS[s.shipTypeId] ?? 0), 0);
       meetsStat = meetsStats(
         { ...totalStats, fire: totalStats.fire + equipFireBonus, asw: totalStats.asw + equipAswBonus },
         expedition.statRequirements,
