@@ -9,10 +9,10 @@
     <div class="app-body">
       <!-- ===== 左パネル: 所持艦娘 ===== -->
       <section class="panel panel-left">
-        <h2 class="panel-title">所持艦娘</h2>
+        <h2 class="panel-title">艦娘登録</h2>
 
         <!-- タブ -->
-        <div class="tabs">
+        <div class="tabs tabs--vertical">
           <button :class="['tab-btn', { active: inputTab === 'manual' }]" @click="inputTab = 'manual'">手動入力</button>
           <button :class="['tab-btn', { active: inputTab === 'json' }]" @click="inputTab = 'json'">JSONインポート</button>
           <button :class="['tab-btn', { active: inputTab === 'kcweb' }]" @click="inputTab = 'kcweb'">kc-web</button>
@@ -139,69 +139,89 @@
           </details>
         </div>
 
-        <!-- 艦娘リスト -->
-        <div class="ship-list-header">
-          <span>
-            登録済み: {{ ships.length }}隻
-            <span v-if="excludedShipIds.size" class="excluded-count">
-              (除外中: {{ excludedShipIds.size }}隻)
-            </span>
-          </span>
-          <div class="ship-list-actions">
-            <button v-if="ships.length" class="btn btn-secondary-sm" @click="exportShipsJson">💾 保存</button>
-            <label class="btn btn-secondary-sm">
-              📂 読み込み
-              <input type="file" accept=".json" style="display:none" @change="importFromFile" />
-            </label>
-            <button v-if="ships.length" class="btn btn-danger-sm" @click="clearShips">全削除</button>
-          </div>
-        </div>
-        <div class="ship-list">
-          <div v-if="!ships.length" class="empty-msg">艦娘を追加してください</div>
-          <details
-            v-for="[typeId, typeShips] in shipsByType"
-            :key="typeId"
-            class="ship-type-group"
-          >
-            <summary class="ship-type-summary">
-              <span class="ship-type-badge summary-badge" :style="{ background: typeColor(typeId) }">
-                {{ typeLabel(typeId) }}
-              </span>
-              <span class="summary-count">{{ typeShips.length }}隻</span>
-              <span
-                v-if="typeShips.some(s => excludedShipIds.has(s.uniqueId))"
-                class="summary-excluded"
-              >(除外中: {{ typeShips.filter(s => excludedShipIds.has(s.uniqueId)).length }}隻)</span>
-            </summary>
-            <div class="ship-type-body">
-              <div
-                v-for="ship in typeShips"
-                :key="ship.uniqueId"
-                class="ship-item"
-                :class="{ 'ship-item--excluded': excludedShipIds.has(ship.uniqueId) }"
-              >
-                <span class="ship-name">{{ ship.name }}</span>
-                <span class="ship-level">Lv{{ ship.level }}</span>
-                <span v-if="ship.canDaihatsu" class="daihatsu-badge" title="大発動艇系装備可能">大発</span>
-                <span v-if="ship.stats" class="ship-stats-mini">
-                  火{{ ship.stats.fire }} 空{{ ship.stats.antiAir }} 潜{{ ship.stats.asw }} 索{{ ship.stats.scout }}
-                </span>
-                <span v-else class="ship-no-stats">ステータス未入力</span>
-                <button
-                  class="btn-exclude"
-                  :class="{ 'btn-exclude--active': excludedShipIds.has(ship.uniqueId) }"
-                  @click="toggleExclude(ship.uniqueId)"
-                  :title="excludedShipIds.has(ship.uniqueId) ? '除外解除' : '候補から除外'"
-                >{{ excludedShipIds.has(ship.uniqueId) ? '除外中' : '除外' }}</button>
-                <button class="btn-remove" @click="removeShip(ship.uniqueId)" title="削除">×</button>
-              </div>
-            </div>
-          </details>
+        <!-- 登録状況（簡易表示） -->
+        <div class="ship-count-bar">
+          登録済み: <strong>{{ ships.length }}隻</strong>
+          <span v-if="excludedShipIds.size" class="excluded-count">（除外中: {{ excludedShipIds.size }}隻）</span>
+          <span v-if="ships.length" class="ship-count-hint">← 右パネルの「登録済み艦娘」タブで確認・編集</span>
         </div>
       </section>
 
       <!-- ===== 右パネル ===== -->
       <div class="panel-right">
+        <!-- 右パネルタブ -->
+        <div class="right-tabs">
+          <button :class="['tab-btn', { active: rightTab === 'expedition' }]" @click="rightTab = 'expedition'">遠征選択</button>
+          <button :class="['tab-btn', { active: rightTab === 'ships' }]" @click="rightTab = 'ships'">
+            登録済み艦娘
+            <span v-if="ships.length" class="tab-count">{{ ships.length }}</span>
+          </button>
+        </div>
+
+        <!-- 登録済み艦娘タブ -->
+        <section v-if="rightTab === 'ships'" class="panel panel-ships">
+          <div class="ship-list-header">
+            <span>
+              登録済み: {{ ships.length }}隻
+              <span v-if="excludedShipIds.size" class="excluded-count">（除外中: {{ excludedShipIds.size }}隻）</span>
+            </span>
+            <div class="ship-list-actions">
+              <button v-if="ships.length" class="btn btn-secondary-sm" @click="exportShipsJson">💾 保存</button>
+              <label class="btn btn-secondary-sm">
+                📂 読み込み
+                <input type="file" accept=".json" style="display:none" @change="importFromFile" />
+              </label>
+              <button v-if="ships.length" class="btn btn-danger-sm" @click="clearShips">全削除</button>
+            </div>
+          </div>
+          <div class="ship-list">
+            <div class="ship-list-inner">
+            <div v-if="!ships.length" class="empty-msg">艦娘を追加してください（左パネルから入力）</div>
+            <details
+              v-for="[typeId, typeShips] in shipsByType"
+              :key="typeId"
+              class="ship-type-group"
+            >
+              <summary class="ship-type-summary">
+                <span class="ship-type-badge summary-badge" :style="{ background: typeColor(typeId) }">
+                  {{ typeLabel(typeId) }}
+                </span>
+                <span class="summary-count">{{ typeShips.length }}隻</span>
+                <span
+                  v-if="typeShips.some(s => excludedShipIds.has(s.uniqueId))"
+                  class="summary-excluded"
+                >(除外中: {{ typeShips.filter(s => excludedShipIds.has(s.uniqueId)).length }}隻)</span>
+              </summary>
+              <div class="ship-type-body">
+                <div
+                  v-for="ship in typeShips"
+                  :key="ship.uniqueId"
+                  class="ship-item"
+                  :class="{ 'ship-item--excluded': excludedShipIds.has(ship.uniqueId) }"
+                >
+                  <span class="ship-name">{{ ship.name }}</span>
+                  <span class="ship-level">Lv{{ ship.level }}</span>
+                  <span v-if="ship.canDaihatsu" class="daihatsu-badge" title="大発動艇系装備可能">大発</span>
+                  <span v-if="ship.stats" class="ship-stats-mini">
+                    火{{ ship.stats.fire }} 空{{ ship.stats.antiAir }} 潜{{ ship.stats.asw }} 索{{ ship.stats.scout }}
+                  </span>
+                  <span v-else class="ship-no-stats">ステータス未入力</span>
+                  <button
+                    class="btn-exclude"
+                    :class="{ 'btn-exclude--active': excludedShipIds.has(ship.uniqueId) }"
+                    @click="toggleExclude(ship.uniqueId)"
+                    :title="excludedShipIds.has(ship.uniqueId) ? '除外解除' : '候補から除外'"
+                  >{{ excludedShipIds.has(ship.uniqueId) ? '除外中' : '除外' }}</button>
+                  <button class="btn-remove" @click="removeShip(ship.uniqueId)" title="削除">×</button>
+                </div>
+              </div>
+            </details>
+            </div><!-- /ship-list-inner -->
+          </div>
+        </section>
+
+        <!-- 遠征選択タブ: 独自スクロール領域で包む -->
+        <div v-if="rightTab === 'expedition'" class="expedition-tab-scroll">
         <!-- 遠征選択 -->
         <section class="panel">
           <h2 class="panel-title">遠征選択</h2>
@@ -314,6 +334,7 @@
             </div>
           </div>
         </section>
+        </div><!-- /expedition-tab-scroll -->
       </div>
     </div>
 
@@ -381,6 +402,7 @@ function typeLabel(typeId: number) { return TYPE_LABELS[typeId] ?? `T${typeId}` 
 
 // ── 状態 ──────────────────────────────────────────────────────────────────
 const inputTab = ref<'manual' | 'json' | 'kcweb'>('manual')
+const rightTab = ref<'expedition' | 'ships'>('expedition')
 const ships = ref<OwnedShip[]>([])
 const selectedExpeditionIds = ref<string[]>(['A4', 'A5', 'A6'])
 const matchResult = ref<MatchResult | null>(null)
@@ -927,8 +949,8 @@ function statusLabel(meets: boolean | null) {
   border-radius: 8px;
   padding: 16px;
 }
-.panel-left { width: 384px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
-.panel-right { flex: 1; display: flex; flex-direction: column; gap: 16px; min-width: 0; overflow-y: auto; }
+.panel-left { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+.panel-right { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: hidden; }
 .panel-title {
   font-size: 1rem;
   font-weight: 700;
@@ -941,10 +963,11 @@ function statusLabel(meets: boolean | null) {
 
 /* ── タブ ──────────────────────────────────────────────── */
 .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.tabs--vertical { flex-direction: column; }
 .tab-btn {
   flex: 1; padding: 6px; border: 1px solid #2e3f60; border-radius: 6px;
   background: #151e30; color: #8aa8c0; cursor: pointer; font-size: 0.82rem;
-  transition: all 0.15s;
+  transition: all 0.15s; text-align: left;
 }
 .tab-btn.active { background: #2a4a7c; color: #e0f0ff; border-color: #4a7abc; }
 
@@ -982,6 +1005,36 @@ function statusLabel(meets: boolean | null) {
 }
 .btn-secondary-sm:hover { background: #1a2a3a; }
 .ship-list-actions { display: flex; gap: 4px; align-items: center; }
+
+/* ── 遠征選択タブ スクロール領域 ─────────────────────── */
+.expedition-tab-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── 右パネルタブ ─────────────────────────────────────── */
+.right-tabs { display: flex; gap: 4px; margin-bottom: 4px; }
+.tab-count {
+  display: inline-block; margin-left: 5px;
+  background: #2a5a8c; color: #c8e8ff;
+  font-size: 0.7rem; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px;
+}
+
+/* ── 登録済み艦娘パネル ───────────────────────────────── */
+.panel-ships { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+
+/* ── 登録数バー（左パネル下部） ─────────────────────── */
+.ship-count-bar {
+  margin-top: 8px; font-size: 0.8rem; color: #7a9ab8;
+  padding: 6px 8px; background: #151e30; border-radius: 5px;
+  border: 1px solid #253550;
+}
+.ship-count-hint { margin-left: 8px; color: #4a6a8a; font-size: 0.75rem; }
 .btn-propose {
   background: linear-gradient(135deg, #1a5a4a, #2a7a60);
   color: #d0fff0; font-size: 0.9rem; padding: 8px 24px;
@@ -1009,7 +1062,8 @@ function statusLabel(meets: boolean | null) {
   display: flex; justify-content: space-between; align-items: center;
   font-size: 0.8rem; color: #7a9ab8; margin: 8px 0 4px;
 }
-.ship-list { flex: 1; min-height: 0; overflow-y: scroll; display: flex; flex-direction: column; gap: 3px; }
+.ship-list { flex: 1; min-height: 0; overflow-y: scroll; overflow-x: hidden; overscroll-behavior: contain; }
+.ship-list-inner { display: flex; flex-direction: column; gap: 3px; }
 .empty-msg { text-align: center; color: #4a6a8a; font-size: 0.8rem; padding: 16px; }
 
 /* ── 艦種アコーディオン ──────────────────────────────── */
@@ -1033,7 +1087,13 @@ details[open] > .ship-type-summary::before { transform: rotate(90deg); }
 .summary-count { color: #a0c0e0; font-weight: 600; }
 .summary-excluded { color: #c0804a; font-size: 0.75rem; margin-left: auto; }
 
-.ship-type-body { display: flex; flex-direction: column; gap: 2px; padding: 4px; background: #141c2e; }
+.ship-type-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2px;
+  padding: 4px;
+  background: #141c2e;
+}
 .ship-item {
   display: flex; align-items: center; gap: 6px;
   background: #151e30; border: 1px solid #253550; border-radius: 4px; padding: 4px 8px;
