@@ -77,6 +77,7 @@ const EQUIPMENT_ASW_BONUS: Record<number, number> = {
   20: 20, // AS  潜水母艦 (ソナー系装備可)
   21: 15, // CT  練巡
 };
+
 import { SHIP_TYPE_IDS } from './types';
 import { sumFleetStats, meetsStats } from './shipStats';
 
@@ -207,6 +208,16 @@ function findCandidates(
 
   function commitFleet(): void {
     const fleet = chosen.map((i) => ships[i]);
+    // 同一艦（改装形態違い含む）の重複チェック
+    // 艦名から改装サフィックスを除いた基本艦名で比較する
+    // 例: 最上改二 / 最上改二特 → 最上、瑞鶴改二甲 → 瑞鶴、Gambier Bay Mk.II → Gambier Bay
+    const baseNames = fleet.map((s) =>
+      s.name
+        .replace(/改[二三四]?[特甲乙丙]?$/, '')
+        .replace(/\s*Mk\.\s*I{1,3}$/i, '')
+        .trim(),
+    );
+    if (new Set(baseNames).size !== baseNames.length) return;
     // 旗艦レベルチェック (先頭艦が旗艦)
     // 旗艦は最大レベルの艦を優先する => フリートをソート後に先頭を確認
     const sorted = [...fleet].sort((a, b) => b.level - a.level);
@@ -289,15 +300,22 @@ export function matchExpeditions(
 
   for (const { expedition } of ranked) {
     // 未割当艦娘のみに絞り込む
-    // ソート: 高コスト艦 (戦艦・正規/装甲空母) を後回しにし、同グループ内は火力降順
-    // → 高火力＝高レベル傾向があり、バックトラックが最初に試す候補が有効になりやすい
+    // ソート優先順位（バックトラックが試す順序 = 自由枠で最初に選ばれる順序）:
+    //   tier 0: DD / asw>0 の DE（最優先 — 燃費◎、汎用性高）
+    //   tier 1: その他の非高コスト艦（CL, CA, CVL, AV 等）
+    //   tier 2: 高コスト艦（戦艦・正規/装甲空母）
+    //   同 tier 内は火力降順
     const remaining = availableShips
       .filter((s) => !assignedShipIds.has(shipKey(s)))
       .sort((a, b) => {
-        const expA = EXPENSIVE_TYPES.has(a.shipTypeId) ? 1 : 0;
-        const expB = EXPENSIVE_TYPES.has(b.shipTypeId) ? 1 : 0;
-        if (expA !== expB) return expA - expB; // 高コスト艦を後ろへ
-        return (b.stats?.fire ?? 0) - (a.stats?.fire ?? 0); // 同グループ内は火力降順
+        const tierOf = (s: OwnedShip) => {
+          if (s.shipTypeId === 2 || (s.shipTypeId === 1 && (s.stats?.asw ?? 0) > 0)) return 0;
+          if (EXPENSIVE_TYPES.has(s.shipTypeId)) return 2;
+          return 1;
+        };
+        const tA = tierOf(a), tB = tierOf(b);
+        if (tA !== tB) return tA - tB;
+        return (b.stats?.fire ?? 0) - (a.stats?.fire ?? 0);
       });
 
     // 残り艦娘から候補を収集 (大発制約あり)
@@ -342,11 +360,14 @@ export function matchExpeditions(
 
     // ソート優先順位:
     //   1. 高コスト艦 (戦艦・正規/装甲空母) を含まない艦隊を優先
-    //      → 軽空母・水母で代替できる場合はそちらを採用
-    //   2. 高コスト艦なし同士: 有効火力比降順 → 燃費昇順
-    //   3. 高コスト艦あり同士: 燃費昇順 (消費の少ない艦を優先) → 火力比降順
+    //   2. DD / DE（海防戦艦除く = asw > 0 の DE）の人数が多い艦隊を優先
+    //   3. スタット比降順（火力・対潜要件への近さ）
     // パフォーマンス: ソート前にキーを一括計算してキャッシュする
-    // EXPENSIVE_TYPES はモジュールレベルで定義済み
+
+    // DD または asw > 0 の DE（海防戦艦を除く）を優先艦と定義
+    const isPreferred = (s: OwnedShip) =>
+      s.shipTypeId === 2 || (s.shipTypeId === 1 && (s.stats?.asw ?? 0) > 0);
+
     const fireReq = expedition.statRequirements?.fire ?? 0;
     const aswReq  = expedition.statRequirements?.asw  ?? 0;
     const computeStatRatio = (fleet: OwnedShip[]) => {
@@ -368,25 +389,17 @@ export function matchExpeditions(
     };
     const keys = allCandidates.map((fleet) => ({
       fleet,
-      hasExpensive: fleet.some((s) => EXPENSIVE_TYPES.has(s.shipTypeId)) ? 1 : 0,
-      fuel: fleet.every((s) => s.fuel != null)
-        ? fleet.reduce((acc, s) => acc + s.fuel!, 0)
-        : Infinity,
-      statRatio: computeStatRatio(fleet),
+      hasExpensive:  fleet.some((s) => EXPENSIVE_TYPES.has(s.shipTypeId)) ? 1 : 0,
+      preferredCount: fleet.filter(isPreferred).length,
+      statRatio:     computeStatRatio(fleet),
     }));
     keys.sort((a, b) => {
-      // 高コスト艦なしを優先
+      // 1. 高コスト艦なしを優先
       if (a.hasExpensive !== b.hasExpensive) return a.hasExpensive - b.hasExpensive;
-      if (a.hasExpensive === 0) {
-        // 両方高コスト艦なし: 複合スタット比降順 → 燃費昇順
-        const diff = b.statRatio - a.statRatio;
-        if (Math.abs(diff) > 0.001) return diff;
-        return a.fuel - b.fuel;
-      } else {
-        // 両方高コスト艦あり: 燃費昇順 → 複合スタット比降順
-        if (a.fuel !== b.fuel) return a.fuel - b.fuel;
-        return b.statRatio - a.statRatio;
-      }
+      // 2. DD/DE（海防戦艦除く）の人数が多い艦隊を優先
+      if (a.preferredCount !== b.preferredCount) return b.preferredCount - a.preferredCount;
+      // 3. スタット比降順
+      return b.statRatio - a.statRatio;
     });
     allCandidates = keys.map((k) => k.fleet);
 
