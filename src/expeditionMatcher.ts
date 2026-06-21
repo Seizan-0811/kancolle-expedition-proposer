@@ -286,12 +286,15 @@ export function matchExpeditions(
     }
 
     // ソート優先順位:
-    //   1. 戦艦 (FBB/BB/BBV) を含まない艦隊を優先
-    //   2. 戦艦なし同士: 有効火力比降順 → 燃費昇順
-    //   3. 戦艦あり同士: 燃費昇順 (消費の少ない戦艦を優先) → 火力比降順
+    //   1. 高コスト艦 (戦艦・正規/装甲空母) を含まない艦隊を優先
+    //      → 軽空母・水母で代替できる場合はそちらを採用
+    //   2. 高コスト艦なし同士: 有効火力比降順 → 燃費昇順
+    //   3. 高コスト艦あり同士: 燃費昇順 (消費の少ない艦を優先) → 火力比降順
     // パフォーマンス: ソート前にキーを一括計算してキャッシュする
     const fireReq = expedition.statRequirements?.fire ?? 0;
-    const BB_TYPES = new Set([8, 9, 10]); // FBB=8, BB=9, BBV=10
+    // 高コスト艦種: FBB=8, BB=9, BBV=10, CV=11, CVB=18
+    // CVL(7)・AV(16) は低コストとして扱い、CVスロットに優先的に充てる
+    const EXPENSIVE_TYPES = new Set([8, 9, 10, 11, 18]);
     const computeFireRatio = (fleet: OwnedShip[]) => {
       if (fireReq === 0) return 1;
       const stats = fleet.map((s) => s.stats).filter((s): s is ShipStats => s != null);
@@ -301,21 +304,22 @@ export function matchExpeditions(
     };
     const keys = allCandidates.map((fleet) => ({
       fleet,
-      hasBB: fleet.some((s) => BB_TYPES.has(s.shipTypeId)) ? 1 : 0,
+      hasExpensive: fleet.some((s) => EXPENSIVE_TYPES.has(s.shipTypeId)) ? 1 : 0,
       fuel: fleet.every((s) => s.fuel != null)
         ? fleet.reduce((acc, s) => acc + s.fuel!, 0)
         : Infinity,
       fireRatio: computeFireRatio(fleet),
     }));
     keys.sort((a, b) => {
-      if (a.hasBB !== b.hasBB) return a.hasBB - b.hasBB; // 戦艦なし優先
-      if (a.hasBB === 0) {
-        // 両方戦艦なし: 火力比降順 → 燃費昇順
+      // 高コスト艦なしを優先
+      if (a.hasExpensive !== b.hasExpensive) return a.hasExpensive - b.hasExpensive;
+      if (a.hasExpensive === 0) {
+        // 両方高コスト艦なし: 火力比降順 → 燃費昇順
         const diff = b.fireRatio - a.fireRatio;
         if (Math.abs(diff) > 0.001) return diff;
         return a.fuel - b.fuel;
       } else {
-        // 両方戦艦あり: 燃費昇順 → 火力比降順
+        // 両方高コスト艦あり: 燃費昇順 → 火力比降順
         if (a.fuel !== b.fuel) return a.fuel - b.fuel;
         return b.fireRatio - a.fireRatio;
       }
