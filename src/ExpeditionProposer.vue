@@ -900,7 +900,7 @@ function statusLabel(meets: boolean | null) {
 
 <style scoped>
 /* ── レイアウト ─────────────────────────────────────────── */
-.app-root { min-height: 100vh; display: flex; flex-direction: column; }
+.app-root { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 .app-header {
   background: linear-gradient(135deg, #0d1b2e 0%, #1a3a5c 100%);
@@ -912,10 +912,12 @@ function statusLabel(meets: boolean | null) {
 
 .app-body {
   flex: 1;
+  min-height: 0;
   display: flex;
   gap: 16px;
   padding: 16px;
-  align-items: flex-start;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 /* ── パネル共通 ──────────────────────────────────────────── */
@@ -925,8 +927,8 @@ function statusLabel(meets: boolean | null) {
   border-radius: 8px;
   padding: 16px;
 }
-.panel-left { width: 384px; flex-shrink: 0; }
-.panel-right { flex: 1; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.panel-left { width: 384px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+.panel-right { flex: 1; display: flex; flex-direction: column; gap: 16px; min-width: 0; overflow-y: auto; }
 .panel-title {
   font-size: 1rem;
   font-weight: 700;
@@ -1007,7 +1009,7 @@ function statusLabel(meets: boolean | null) {
   display: flex; justify-content: space-between; align-items: center;
   font-size: 0.8rem; color: #7a9ab8; margin: 8px 0 4px;
 }
-.ship-list { max-height: 420px; overflow-y: scroll; display: flex; flex-direction: column; gap: 3px; }
+.ship-list { flex: 1; min-height: 0; overflow-y: scroll; display: flex; flex-direction: column; gap: 3px; }
 .empty-msg { text-align: center; color: #4a6a8a; font-size: 0.8rem; padding: 16px; }
 
 /* ── 艦種アコーディオン ──────────────────────────────── */
