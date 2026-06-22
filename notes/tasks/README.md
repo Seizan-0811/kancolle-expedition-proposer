@@ -59,3 +59,4 @@
 | 工作艦（明石）の艦種 ID 誤り: `22` → `19`（kc-web の AR: 19 に準拠） | 2026-06-22 |
 | type 22 補給艦（山汐丸・宗谷など）の艦種マッピング欠落を修正 | 2026-06-22 |
 | `TYPE_LABELS` / `SHIP_TYPE_ORDER` / `TYPE_MAP` の type 19・22 を整合 | 2026-06-22 |
+| D2/D3（AS×SS×3）選択時のフリーズ修正: `findCandidates` に minDaihatsu 不可能判定を追加 | 2026-06-22 |
