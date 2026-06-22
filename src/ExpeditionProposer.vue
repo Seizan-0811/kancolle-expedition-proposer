@@ -581,8 +581,10 @@ const kcwebSnippet = `(async function() {
   try {
     await navigator.clipboard.writeText(json);
     console.log('✓ クリップボードにコピーしました。JSONインポートタブに貼り付けてください。');
+    alert('✅ 艦娘データ（' + ships.length + '隻）をクリップボードにコピーしました！\\n遠征プランナーの「JSONインポート」タブに貼り付けてください。');
   } catch(e) {
     console.log('クリップボードへのコピーに失敗しました。↑ 上のJSONを手動でコピーしてJSONインポートタブに貼り付けてください。');
+    alert('⚠️ クリップボードへのコピーに失敗しました。\\nコンソールに出力されたJSONをコピーして「JSONインポート」タブに貼り付けてください。');
   }
 })();`
 
