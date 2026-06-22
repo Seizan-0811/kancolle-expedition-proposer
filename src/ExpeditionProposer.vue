@@ -13,9 +13,9 @@
 
         <!-- タブ -->
         <div class="tabs tabs--vertical">
-          <button :class="['tab-btn', { active: inputTab === 'manual' }]" @click="inputTab = 'manual'">手動入力</button>
-          <button :class="['tab-btn', { active: inputTab === 'json' }]" @click="inputTab = 'json'">JSONインポート</button>
           <button :class="['tab-btn', { active: inputTab === 'kcweb' }]" @click="inputTab = 'kcweb'">kc-web</button>
+          <button :class="['tab-btn', { active: inputTab === 'json' }]" @click="inputTab = 'json'">JSONインポート</button>
+          <button :class="['tab-btn', { active: inputTab === 'manual' }]" @click="inputTab = 'manual'">手動入力</button>
         </div>
 
         <!-- 手動入力フォーム -->
@@ -434,7 +434,7 @@ function typeColor(typeId: number) { return TYPE_COLORS[typeId] ?? '#555' }
 function typeLabel(typeId: number) { return TYPE_LABELS[typeId] ?? `T${typeId}` }
 
 // ── 状態 ──────────────────────────────────────────────────────────────────
-const inputTab = ref<'manual' | 'json' | 'kcweb'>('manual')
+const inputTab = ref<'manual' | 'json' | 'kcweb'>('kcweb')
 const rightTab = ref<'expedition' | 'ships'>('expedition')
 const ships = ref<OwnedShip[]>([])
 const selectedExpeditionIds = ref<string[]>(['A4', 'A5', 'A6'])
