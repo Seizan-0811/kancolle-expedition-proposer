@@ -531,7 +531,12 @@ const kcwebSnippet = `(async function() {
     return walk(el || document.body);
   }
   const store = findStore();
-  if (!store) return console.error('kc-webのVuexストアにアクセスできませんでした。\\nkc-webを開いたタブで実行しているか確認してください。\\nデバッグ: コンソールで document.querySelector(\"#app\").__vue__ を確認してください。');
+  if (!store) {
+    const msg = '❌ kc-webのデータを取得できませんでした。\\nkc-web（制空権シミュレータ）を開いているタブで実行しているか確認してください。';
+    console.error(msg);
+    alert(msg);
+    return;
+  }
 
   // ShipMaster[]: .id .type .name .fire .antiAir .minAsw .maxAsw .minScout .maxScout
   const masterMap = new Map(store.state.ships.map(s => [s.id, s]));
@@ -551,7 +556,10 @@ const kcwebSnippet = `(async function() {
   // --- 所持艦娘全体 (state.shipStock: ShipStock[]) ---
   const stockList = store.state.shipStock;
   if (!stockList?.length) {
-    return console.error('所持艦娘データ(shipStock)が0件です。kc-webで艦娘在庫を読み込んでいるか確認してください。');
+    const msg = '❌ 所持艦娘データが0件です。\\nkc-webで艦娘在庫を読み込んでから再度実行してください。';
+    console.error(msg);
+    alert(msg);
+    return;
   }
 
   // --- 全所持艦娘を変換 (素ステータス + 近代化改修ボーナスのみ、装備は含まない) ---
