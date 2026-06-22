@@ -493,9 +493,8 @@ export function matchExpeditions(
       // 3. スタット比降順（差が 0.05 以上の場合のみ優先; それ以下は燃料で判断）
       const ratioDiff = b.statRatio - a.statRatio;
       if (Math.abs(ratioDiff) >= 0.05) return ratioDiff;
-      // 4. 燃料消費昇順（軽空母/護衛空母旗艦の遠征のみ適用; fuel データがない場合はスキップ）
-      if (expedition.flagshipType === 'CVL'
-          && a.totalFuel != null && b.totalFuel != null && a.totalFuel !== b.totalFuel) {
+      // 4. 燃料消費昇順（全遠征に適用; fuel データがない場合はスキップ）
+      if (a.totalFuel != null && b.totalFuel != null && a.totalFuel !== b.totalFuel) {
         return a.totalFuel - b.totalFuel;
       }
       return ratioDiff;
