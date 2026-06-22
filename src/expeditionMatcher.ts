@@ -135,6 +135,7 @@ function findCandidates(
   totalLevel: number,
   maxResults = 20,
   minDaihatsu = 0,
+  flagshipType?: string,
 ): OwnedShip[][] {
   const results: OwnedShip[][] = [];
   // 候補が 1 件も見つからない場合でもバックトラックが全組み合わせを走破しないよう
@@ -277,9 +278,19 @@ function findCandidates(
         .trim(),
     );
     if (new Set(baseNames).size !== baseNames.length) return;
-    // 旗艦レベルチェック (先頭艦が旗艦)
-    // 旗艦は最大レベルの艦を優先する => フリートをソート後に先頭を確認
-    const sorted = [...fleet].sort((a, b) => b.level - a.level);
+    // 旗艦の決定:
+    //   flagshipType が指定されている場合は、その艦種の中で最高レベルの艦を旗艦にする
+    //   指定がない場合は最高レベルの艦を旗艦にする（従来の挙動）
+    let sorted: OwnedShip[];
+    if (flagshipType) {
+      const flagshipCandidates = fleet.filter((s) => matchesShipTypeAbbr(s, flagshipType));
+      if (flagshipCandidates.length === 0) return; // 旗艦候補なし → 無効
+      const flagship = flagshipCandidates.reduce((best, s) => (s.level > best.level ? s : best));
+      sorted = [flagship, ...fleet.filter((s) => s !== flagship).sort((a, b) => b.level - a.level)];
+    } else {
+      sorted = [...fleet].sort((a, b) => b.level - a.level);
+    }
+    // 旗艦レベルチェック
     if (sorted[0].level < minFlagshipLv) return;
     // 合計レベルチェック
     const lvSum = fleet.reduce((s, sh) => s + sh.level, 0);
@@ -341,6 +352,7 @@ export function matchExpeditions(
         exp.totalLevel,
         5, // スコア用なので少数でよい
         exp.minDaihatsu ?? 0,
+        exp.flagshipType,
       ).length;
     }
     // 火力要件が高い遠征は候補数スコアを減らして優先処理（高火力艦を先に確保）
@@ -393,6 +405,7 @@ export function matchExpeditions(
           expedition.totalLevel,
           20,
           minDaihatsu,
+          expedition.flagshipType,
         );
         allCandidates.push(...candidates);
         if (allCandidates.length >= 20) break;
@@ -411,6 +424,8 @@ export function matchExpeditions(
           expedition.minFlagshipLv,
           expedition.totalLevel,
           20,
+          0,
+          expedition.flagshipType,
         );
         allCandidates.push(...candidates);
         if (allCandidates.length >= 20) break;
@@ -543,6 +558,8 @@ export function suggestForOneExpedition(
       expedition.minFlagshipLv,
       expedition.totalLevel,
       10,
+      0,
+      expedition.flagshipType,
     );
     allCandidates.push(...found);
     if (allCandidates.length >= 10) break;

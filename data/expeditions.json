@@ -376,7 +376,8 @@
       "fuelRate": 20,
       "ammoRate": 20,
       "note": "軽巡旗艦必須。索敵装備も多数必要。ネジ1狙い。大成功条件は要確認。",
-      "minDaihatsu": 2
+      "minDaihatsu": 2,
+      "flagshipType": "CL"
     },
     {
       "world": 7,
@@ -479,7 +480,8 @@
       "fuelRate": 20,
       "ammoRate": 20,
       "note": "護衛空母(旗艦)またはCVL+CL編成。燃料2000が主な報酬。ネジ1狙い。",
-      "minDaihatsu": 2
+      "minDaihatsu": 2,
+      "flagshipType": "CVL"
     },
     {
       "world": 7,
@@ -547,7 +549,8 @@
       "fuelRate": 20,
       "ammoRate": 20,
       "note": "報酬は要確認。",
-      "minDaihatsu": 2
+      "minDaihatsu": 2,
+      "flagshipType": "CVL"
     },
     {
       "world": 7,
@@ -613,7 +616,8 @@
       "fuelRate": 20,
       "ammoRate": 20,
       "note": "報酬は要確認。",
-      "minDaihatsu": 2
+      "minDaihatsu": 2,
+      "flagshipType": "AV"
     },
     {
       "world": 4,
@@ -645,7 +649,8 @@
       "fuelRate": 20,
       "ammoRate": 20,
       "note": "潜母艦Lv55以上必須。大発用に駆逐2を追加するのが一般的。伊良湖ランダム入手あり。",
-      "minDaihatsu": 2
+      "minDaihatsu": 2,
+      "flagshipType": "AS"
     },
     {
       "world": 4,
@@ -680,7 +685,8 @@
       "fuelRate": 20,
       "ammoRate": 20,
       "note": "D2と同じ編成でOK。潜母艦Lv65以上必須。ネジ1狙い。",
-      "minDaihatsu": 2
+      "minDaihatsu": 2,
+      "flagshipType": "AS"
     },
     {
       "world": 5,
@@ -714,7 +720,8 @@
       "fuelRate": 20,
       "ammoRate": 20,
       "note": "ネジ1狙い。重巡旗艦。索敵・対潜装備も必要。",
-      "minDaihatsu": 2
+      "minDaihatsu": 2,
+      "flagshipType": "CA"
     },
     {
       "world": 5,

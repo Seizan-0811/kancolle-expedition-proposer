@@ -65,6 +65,11 @@ export interface Expedition {
    * 省略または 0 の場合は制約なし。満たせない場合は制約なしにフォールバック。
    */
   minDaihatsu?: number;
+  /**
+   * 旗艦艦種制約 (省略時は最高レベル艦が自動的に旗艦になる)
+   * B6=CL, 43=CVL, 45=CVL, D1=AV, D2=AS, D3=AS, E1=CA
+   */
+  flagshipType?: ShipTypeAbbr;
   note: string;
 }
 
