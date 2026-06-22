@@ -1,5 +1,5 @@
 <template>
-  <div class="app-root">
+  <div class="app-root" :class="{ 'is-resizing': isResizing }">
     <!-- ヘッダー -->
     <header class="app-header">
       <h1>🚢 艦これ遠征プランナー</h1>
@@ -8,7 +8,7 @@
 
     <div class="app-body">
       <!-- ===== 左パネル: 所持艦娘 ===== -->
-      <section class="panel panel-left">
+      <section class="panel panel-left" :style="{ width: panelLeftWidth + 'px' }">
         <h2 class="panel-title">艦娘登録</h2>
 
         <!-- タブ -->
@@ -158,6 +158,13 @@
           <span v-if="ships.length" class="ship-count-hint">← 右パネルの「登録済み艦娘」タブで確認・編集</span>
         </div>
       </section>
+
+      <!-- リサイザー -->
+      <div
+        class="panel-resizer"
+        :class="{ 'panel-resizer--active': isResizing }"
+        @mousedown="startResize"
+      ></div>
 
       <!-- ===== 右パネル ===== -->
       <div class="panel-right">
@@ -435,6 +442,30 @@ function typeLabel(typeId: number) { return TYPE_LABELS[typeId] ?? `T${typeId}` 
 
 // ── 状態 ──────────────────────────────────────────────────────────────────
 const inputTab = ref<'manual' | 'json' | 'kcweb'>('kcweb')
+
+// ── 左パネルリサイザー ────────────────────────────────────────────────────
+const panelLeftWidth = ref(260)
+const isResizing = ref(false)
+
+function startResize(e: MouseEvent) {
+  isResizing.value = true
+  const startX = e.clientX
+  const startWidth = panelLeftWidth.value
+
+  function onMouseMove(e: MouseEvent) {
+    const delta = e.clientX - startX
+    panelLeftWidth.value = Math.max(180, Math.min(450, startWidth + delta))
+  }
+
+  function onMouseUp() {
+    isResizing.value = false
+    window.removeEventListener('mousemove', onMouseMove)
+    window.removeEventListener('mouseup', onMouseUp)
+  }
+
+  window.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('mouseup', onMouseUp)
+}
 const rightTab = ref<'expedition' | 'ships'>('expedition')
 const ships = ref<OwnedShip[]>([])
 const selectedExpeditionIds = ref<string[]>(['A4', 'A5', 'A6'])
@@ -1025,7 +1056,7 @@ function statusLabel(meets: boolean | null) {
   flex: 1;
   min-height: 0;
   display: flex;
-  gap: 16px;
+  gap: 0;
   padding: 16px;
   align-items: stretch;
   overflow: hidden;
@@ -1038,8 +1069,39 @@ function statusLabel(meets: boolean | null) {
   border-radius: 8px;
   padding: 16px;
 }
-.panel-left { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; overflow-y: auto; }
-.panel-right { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: hidden; }
+.panel-left { flex-shrink: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; margin-right: 8px; }
+.panel-right { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: hidden; margin-left: 8px; }
+
+/* ── リサイザー ─────────────────────────────────────────── */
+.panel-resizer {
+  width: 6px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  border-radius: 3px;
+  background: transparent;
+  transition: background 0.15s;
+  position: relative;
+}
+.panel-resizer:hover,
+.panel-resizer--active { background: #2e3f60; }
+.panel-resizer::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
+  background: #4a7abc;
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.panel-resizer:hover::after,
+.panel-resizer--active::after { opacity: 1; }
+
+/* リサイズ中はページ全体のテキスト選択を抑制 */
+.app-root.is-resizing { user-select: none; cursor: col-resize; }
 .panel-title {
   font-size: 1rem;
   font-weight: 700;
@@ -1061,7 +1123,7 @@ function statusLabel(meets: boolean | null) {
 .tab-btn.active { background: #2a4a7c; color: #e0f0ff; border-color: #4a7abc; }
 
 /* ── フォーム ──────────────────────────────────────────── */
-.form-card { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.form-card { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; min-width: 0; }
 .form-row { display: flex; align-items: center; gap: 8px; }
 .form-label { width: 60px; font-size: 0.82rem; color: #8aa8c0; flex-shrink: 0; }
 .optional { font-size: 0.72rem; color: #5a7a9a; }
@@ -1407,7 +1469,7 @@ kbd {
   border-radius: 3px; font-family: monospace; font-size: 0.75rem; color: #90b8d8;
 }
 
-.bookmarklet-wrap { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
+.bookmarklet-wrap { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; flex-wrap: wrap; }
 .bookmarklet-link {
   display: inline-block; padding: 5px 12px;
   background: linear-gradient(135deg, #1a4a7a, #2a6aaa);
