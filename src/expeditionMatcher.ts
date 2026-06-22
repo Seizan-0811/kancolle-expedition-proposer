@@ -207,16 +207,25 @@ function findCandidates(
     }
 
     const abbr = required[reqIdx];
-    for (let i = 0; i < ships.length; i++) {
-      if (results.length >= maxResults) return;
-      if (iterations > MAX_ITER) return;
-      if (usedIndices.has(i)) continue;
-      if (!matchesShipTypeAbbr(ships[i], abbr)) continue;
-      chosen.push(i);
-      usedIndices.add(i);
-      backtrack(reqIdx + 1);
-      chosen.pop();
-      usedIndices.delete(i);
+    // 大発条件が未達の場合は大発可能艦を優先して試す (fillFreeSlots と同じ思想)
+    // これにより、非大発艦×大発艦の組み合わせ爆発で MAX_ITER を超えるのを防ぐ
+    const currentDaihatsu = chosen.reduce((n, i) => n + (ships[i].canDaihatsu ? 1 : 0), 0);
+    const needsDaihatsuPriority = minDaihatsu > 0 && currentDaihatsu < minDaihatsu;
+    for (const requireDaihatsu of (needsDaihatsuPriority ? [true, false] : [false])) {
+      for (let i = 0; i < ships.length; i++) {
+        if (results.length >= maxResults) return;
+        if (iterations > MAX_ITER) return;
+        if (usedIndices.has(i)) continue;
+        if (!matchesShipTypeAbbr(ships[i], abbr)) continue;
+        if (requireDaihatsu && !ships[i].canDaihatsu) continue;
+        chosen.push(i);
+        usedIndices.add(i);
+        backtrack(reqIdx + 1);
+        chosen.pop();
+        usedIndices.delete(i);
+      }
+      // 大発優先パスで候補が得られた場合は非大発パスをスキップ
+      if (requireDaihatsu && results.length > 0) return;
     }
   }
 
