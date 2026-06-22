@@ -461,19 +461,30 @@ export function matchExpeditions(
       if (fireReq === 0 && aswReq === 0) return 1;
       return ratio;
     };
-    const keys = allCandidates.map((fleet) => ({
-      fleet,
-      hasExpensive:  fleet.some((s) => EXPENSIVE_TYPES.has(s.shipTypeId)) ? 1 : 0,
-      preferredCount: fleet.filter(isPreferred).length,
-      statRatio:     computeStatRatio(fleet),
-    }));
+    const keys = allCandidates.map((fleet) => {
+      const fuelList = fleet.map((s) => s.fuel).filter((f): f is number => f != null);
+      const totalFuel = fuelList.length === fleet.length ? fuelList.reduce((a, b) => a + b, 0) : null;
+      return {
+        fleet,
+        hasExpensive:   fleet.some((s) => EXPENSIVE_TYPES.has(s.shipTypeId)) ? 1 : 0,
+        preferredCount: fleet.filter(isPreferred).length,
+        statRatio:      computeStatRatio(fleet),
+        totalFuel,
+      };
+    });
     keys.sort((a, b) => {
       // 1. 高コスト艦なしを優先
       if (a.hasExpensive !== b.hasExpensive) return a.hasExpensive - b.hasExpensive;
       // 2. DD/DE（海防戦艦除く）の人数が多い艦隊を優先
       if (a.preferredCount !== b.preferredCount) return b.preferredCount - a.preferredCount;
-      // 3. スタット比降順
-      return b.statRatio - a.statRatio;
+      // 3. スタット比降順（差が 0.05 以上の場合のみ優先; それ以下は燃料で判断）
+      const ratioDiff = b.statRatio - a.statRatio;
+      if (Math.abs(ratioDiff) >= 0.05) return ratioDiff;
+      // 4. 燃料消費昇順（少ない方を優先; fuel データがない場合はスキップ）
+      if (a.totalFuel != null && b.totalFuel != null && a.totalFuel !== b.totalFuel) {
+        return a.totalFuel - b.totalFuel;
+      }
+      return ratioDiff;
     });
     allCandidates = keys.map((k) => k.fleet);
 
