@@ -29,8 +29,20 @@
             </select>
           </div>
           <div class="form-row">
-            <label class="form-label">艦名 <span class="optional">(任意)</span></label>
-            <input v-model="form.name" class="input-text" placeholder="大淀 など" maxlength="20" />
+            <label class="form-label">艦名</label>
+            <div class="name-input-wrap">
+              <input
+                v-model="form.name"
+                class="input-text"
+                placeholder="大淀 など"
+                maxlength="20"
+                list="ship-name-datalist"
+              />
+              <datalist id="ship-name-datalist">
+                <option v-for="name in manualNameSuggestions" :key="name" :value="name" />
+              </datalist>
+              <span v-if="manualMasterLoading" class="name-input-hint">読込中...</span>
+            </div>
           </div>
           <div class="form-row">
             <label class="form-label">Lv</label>
@@ -381,15 +393,26 @@ const expeditions = (rawData as { expeditions: Expedition[] }).expeditions
 // ── 艦種定義 ──────────────────────────────────────────────────────────────
 const SHIP_TYPE_OPTIONS = [
   { label: '駆逐 (DD)',   abbr: 'DD',  typeId: 2  },
+  { label: '海防 (DE)',   abbr: 'DE',  typeId: 1  },
   { label: '軽巡 (CL)',   abbr: 'CL',  typeId: 3  },
   { label: '雷巡 (CLT)',  abbr: 'CLT', typeId: 4  },
+  { label: '練巡 (CT)',   abbr: 'CT',  typeId: 21 },
   { label: '重巡 (CA)',   abbr: 'CA',  typeId: 5  },
   { label: '航巡 (CAV)',  abbr: 'CAV', typeId: 6  },
+  { label: '高戦 (FBB)',  abbr: 'FBB', typeId: 8  },
+  { label: '戦艦 (BB)',   abbr: 'BB',  typeId: 9  },
+  { label: '航戦 (BBV)',  abbr: 'BBV', typeId: 10 },
   { label: '軽母 (CVL)',  abbr: 'CVL', typeId: 7  },
-  { label: '海防 (DE)',   abbr: 'DE',  typeId: 1  },
+  { label: '空母 (CV)',   abbr: 'CV',  typeId: 11 },
+  { label: '装甲母 (CVB)', abbr: 'CVB', typeId: 18 },
   { label: '水母 (AV)',   abbr: 'AV',  typeId: 16 },
   { label: '潜水 (SS)',   abbr: 'SS',  typeId: 13 },
-  { label: '潜母 (AS)',   abbr: 'AS',  typeId: 20 },
+  { label: '潜水母 (SSV)', abbr: 'SSV', typeId: 14 },
+  { label: '潜母艦 (AS)', abbr: 'AS',  typeId: 20 },
+  { label: '工作艦 (AR)', abbr: 'AR',  typeId: 19 },
+  { label: '揚陸艦 (LHA)', abbr: 'LHA', typeId: 17 },
+  { label: '補給艦 (AO)', abbr: 'AO',  typeId: 15 },
+  { label: '補給艦2 (AO2)', abbr: 'AO2', typeId: 22 },
 ] as const
 
 const TYPE_COLORS: Record<number, string> = {
@@ -397,7 +420,7 @@ const TYPE_COLORS: Record<number, string> = {
   5: '#8b5a2b', 6: '#5a8b5a', 7: '#d4ac0d', 8: '#7d6b8a',
   9: '#6b7d8a', 10: '#8a7d6b', 11: '#c47c0e', 13: '#3a7d7d',
   14: '#4a8d8d', 15: '#8a6a3a', 16: '#5a8baa', 17: '#6b8a3a',
-  18: '#c47c0e', 20: '#7d5a3a', 21: '#8a6fb5', 22: '#4a6a8a',
+  18: '#c47c0e', 19: '#7a6a5a', 20: '#7d5a3a', 21: '#8a6fb5', 22: '#4a6a8a',
 }
 
 const TYPE_LABELS: Record<number, string> = {
@@ -675,6 +698,39 @@ async function fetchKcwebMaster(): Promise<{
 
   return { shipMap, canDaihatsuSet }
 }
+
+// ── 手動入力用 艦娘名サジェスト ────────────────────────────────────────────
+const manualShipNames = ref(new Map<number, string[]>()) // typeId → 艦娘名[]
+const manualMasterLoaded = ref(false)
+const manualMasterLoading = ref(false)
+
+async function loadManualShipMaster() {
+  if (manualMasterLoaded.value || manualMasterLoading.value) return
+  manualMasterLoading.value = true
+  try {
+    const { shipMap } = await fetchKcwebMaster()
+    const byType = new Map<number, string[]>()
+    for (const [, ship] of shipMap) {
+      if (!byType.has(ship.type)) byType.set(ship.type, [])
+      byType.get(ship.type)!.push(ship.name)
+    }
+    // 各艦種内を名前順ソート
+    for (const [, names] of byType) names.sort((a, b) => a.localeCompare(b, 'ja'))
+    manualShipNames.value = byType
+    manualMasterLoaded.value = true
+  } catch {
+    // 失敗時は空のまま（テキスト入力にフォールバック）
+  } finally {
+    manualMasterLoading.value = false
+  }
+}
+
+const manualNameSuggestions = computed(() =>
+  manualShipNames.value.get(form.value.shipTypeId) ?? []
+)
+
+// 手動入力タブを開いた時にマスターを取得
+watch(inputTab, (tab) => { if (tab === 'manual') loadManualShipMaster() }, { immediate: true })
 
 // 素ステータスのみ計算 (装備は含まない)
 // MasterShip は snake_case: anti_air, min_asw, min_scout
@@ -1014,6 +1070,9 @@ function statusLabel(meets: boolean | null) {
   border-radius: 5px; color: #d0e8ff; font-size: 0.85rem;
 }
 .input-number { width: 80px; flex: none; }
+.name-input-wrap { flex: 1; display: flex; align-items: center; gap: 6px; }
+.name-input-wrap .input-text { flex: 1; }
+.name-input-hint { font-size: 0.72rem; color: #5a7a9a; flex-shrink: 0; }
 .stats-details { margin-top: 4px; }
 .stats-details summary { cursor: pointer; font-size: 0.8rem; color: #7a9ab8; user-select: none; }
 .stats-grid { padding: 8px 0; display: flex; flex-direction: column; gap: 6px; }
