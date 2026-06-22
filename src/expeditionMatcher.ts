@@ -245,9 +245,11 @@ function findCandidates(
     }
     if (maxExtra <= 0) return; // これ以上追加できない
     if (iterations > MAX_ITER) return;
-    // 第1パス: 大発可能艦を優先して自由枠に選ぶ
-    // 第2パス: 大発可能艦がいない場合のみ任意の艦にフォールバック
-    for (const requireDaihatsu of [true, false]) {
+    // 大発優先パスは、現時点の chosen で大発条件がまだ満たせていない場合のみ有効にする。
+    // 既に条件を充足している場合は通常の ship ソート順（fire 降順など）で自由枠を選ぶ。
+    const currentDaihatsu = chosen.reduce((n, i) => n + (ships[i].canDaihatsu ? 1 : 0), 0);
+    const needsDaihatsuPriority = minDaihatsu > 0 && currentDaihatsu < minDaihatsu;
+    for (const requireDaihatsu of (needsDaihatsuPriority ? [true, false] : [false])) {
       for (let i = 0; i < ships.length; i++) {
         if (results.length >= maxResults) return;
         if (iterations > MAX_ITER) return;
@@ -372,15 +374,22 @@ export function matchExpeditions(
   for (const { expedition } of ranked) {
     // 未割当艦娘のみに絞り込む
     // ソート優先順位（バックトラックが試す順序 = 自由枠で最初に選ばれる順序）:
-    //   tier 0: DD / asw>0 の DE（最優先 — 燃費◎、汎用性高）
-    //   tier 1: その他の非高コスト艦（CL, CA, CVL, AV 等）
-    //   tier 2: 高コスト艦（戦艦・正規/装甲空母）
+    //   通常:    tier 0 = DD / asw>0 DE, tier 1 = その他, tier 2 = 高コスト艦
+    //   fire≥400: tier 0 = CL/CA 系（自由枠で火力を稼ぐため）, tier 1 = DD / asw>0 DE
     //   同 tier 内は火力降順
+    const fireReq = expedition.statRequirements?.fire ?? 0;
+    const aswReq  = expedition.statRequirements?.asw  ?? 0;
     const remaining = availableShips
       .filter((s) => !assignedShipIds.has(shipKey(s)))
       .sort((a, b) => {
         const tierOf = (s: OwnedShip) => {
-          if (s.shipTypeId === 2 || (s.shipTypeId === 1 && (s.stats?.asw ?? 0) > 0)) return 0;
+          if (fireReq >= 400) {
+            // 高火力要件: CL/雷巡/重巡/航巡/練巡 を優先して自由枠に配置
+            if ([3, 4, 5, 6, 21].includes(s.shipTypeId)) return 0;
+            if (s.shipTypeId === 2 || (s.shipTypeId === 1 && (s.stats?.asw ?? 0) > 0)) return 1;
+          } else {
+            if (s.shipTypeId === 2 || (s.shipTypeId === 1 && (s.stats?.asw ?? 0) > 0)) return 0;
+          }
           if (EXPENSIVE_TYPES.has(s.shipTypeId)) return 2;
           return 1;
         };
@@ -442,8 +451,6 @@ export function matchExpeditions(
     const isPreferred = (s: OwnedShip) =>
       s.shipTypeId === 2 || (s.shipTypeId === 1 && (s.stats?.asw ?? 0) > 0);
 
-    const fireReq = expedition.statRequirements?.fire ?? 0;
-    const aswReq  = expedition.statRequirements?.asw  ?? 0;
     const computeStatRatio = (fleet: OwnedShip[]) => {
       const stats = fleet.map((s) => s.stats).filter((s): s is ShipStats => s != null);
       if (stats.length !== fleet.length) return 0;
@@ -480,8 +487,9 @@ export function matchExpeditions(
       // 3. スタット比降順（差が 0.05 以上の場合のみ優先; それ以下は燃料で判断）
       const ratioDiff = b.statRatio - a.statRatio;
       if (Math.abs(ratioDiff) >= 0.05) return ratioDiff;
-      // 4. 燃料消費昇順（少ない方を優先; fuel データがない場合はスキップ）
-      if (a.totalFuel != null && b.totalFuel != null && a.totalFuel !== b.totalFuel) {
+      // 4. 燃料消費昇順（軽空母/護衛空母旗艦の遠征のみ適用; fuel データがない場合はスキップ）
+      if (expedition.flagshipType === 'CVL'
+          && a.totalFuel != null && b.totalFuel != null && a.totalFuel !== b.totalFuel) {
         return a.totalFuel - b.totalFuel;
       }
       return ratioDiff;
