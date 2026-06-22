@@ -157,14 +157,14 @@ function findCandidates(
   // -----------------------------------------------------------------------
   // minDaihatsu 早期不可能判定
   // -----------------------------------------------------------------------
-  // fillFreeSlots は必須スロットを埋めた後に「minCount - chosen.length」枠だけ
-  // 自由枠を追加する（最低艦数を確保するための必須自由枠）。
-  // 必須艦種スロット + 必須自由枠の合計で実現できる大発最大数が minDaihatsu を
-  // 下回る場合、どの組み合わせを試しても commitFleet が必ず失敗するため
+  // 必須スロット + 全自由枠（必須自由枠 + オプション大発枠）で実現できる大発最大数が
+  // minDaihatsu を下回る場合、どの組み合わせを試しても commitFleet が必ず失敗するため
   // バックトラック（高コスト）を開始する前に空を返す。
   //
-  // 例: D2（AS×1+SS×3, minShipCount=5, minDaihatsu=2）
-  //   必須自由枠 = 5 - 4 = 1, AS/SS は大発不可 → 大発上限 = 0 + 1 = 1 < 2 → 早期リターン
+  // 注: fillFreeSlots は need=0 の際にオプション大発枠（maxCount まで）も追加するため、
+  //     自由枠の上限は minCount ではなく maxCount で計算する。
+  // 例: D2（AS×1+SS×3, minShipCount=5, maxCount=6, minDaihatsu=2）
+  //   自由枠上限 = 6 - 4 = 2, AS/SS は大発不可 → 大発上限 = 0 + 2 = 2 ≥ 2 → 早期リターンしない
   if (minDaihatsu > 0) {
     // 必須スロットから実現できる大発数の上限（各艦種で canDaihatsu=true の艦の数と
     // 必要数の小さい方を合算）
@@ -174,10 +174,10 @@ function findCandidates(
       const d = ships.filter((s) => matchesShipTypeAbbr(s, abbr) && s.canDaihatsu).length;
       maxDaihatsuFromRequired += Math.min(n, d);
     }
-    // 必須自由枠（minCount に達するまでの追加枠）から実現できる大発数の上限
-    const mandatoryFreeSlots = Math.max(0, minCount - required.length);
+    // 全自由枠（必須 + オプション、maxCount まで）から実現できる大発数の上限
+    const totalFreeSlots = Math.max(0, maxCount - required.length);
     const availableDaihatsu = ships.filter((s) => s.canDaihatsu).length;
-    const maxDaihatsuFromFree = Math.min(availableDaihatsu, mandatoryFreeSlots);
+    const maxDaihatsuFromFree = Math.min(availableDaihatsu, totalFreeSlots);
 
     if (maxDaihatsuFromRequired + maxDaihatsuFromFree < minDaihatsu) {
       return [];
