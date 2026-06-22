@@ -58,7 +58,7 @@
             </div>
             <p class="stats-hint">※ 装備込みの値を入力してください</p>
           </details>
-          <button class="btn btn-primary" @click="addShip">＋ 追加</button>
+          <button class="btn btn-primary" :disabled="!form.name.trim()" @click="addShip">＋ 追加</button>
         </div>
 
         <!-- JSONインポート -->
