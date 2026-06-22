@@ -244,19 +244,24 @@ function findCandidates(
     }
     if (maxExtra <= 0) return; // これ以上追加できない
     if (iterations > MAX_ITER) return;
-    for (let i = 0; i < ships.length; i++) {
-      if (results.length >= maxResults) return;
-      if (iterations > MAX_ITER) return;
-      if (usedIndices.has(i)) continue;
-      chosen.push(i);
-      usedIndices.add(i);
-      const prevCount = results.length;
-      fillFreeSlots(need - 1, maxExtra - 1);
-      chosen.pop();
-      usedIndices.delete(i);
-      // 自由枠は必須枠の組み合わせ多様性を確保するため 1 件見つかれば終了
-      // → 各必須枠組み合わせから最大 1 候補を生成し、より多くの必須枠パターンを試す
-      if (results.length > prevCount) return;
+    // 第1パス: 大発可能艦を優先して自由枠に選ぶ
+    // 第2パス: 大発可能艦がいない場合のみ任意の艦にフォールバック
+    for (const requireDaihatsu of [true, false]) {
+      for (let i = 0; i < ships.length; i++) {
+        if (results.length >= maxResults) return;
+        if (iterations > MAX_ITER) return;
+        if (usedIndices.has(i)) continue;
+        if (requireDaihatsu && !ships[i].canDaihatsu) continue;
+        chosen.push(i);
+        usedIndices.add(i);
+        const prevCount = results.length;
+        fillFreeSlots(need - 1, maxExtra - 1);
+        chosen.pop();
+        usedIndices.delete(i);
+        // 自由枠は必須枠の組み合わせ多様性を確保するため 1 件見つかれば終了
+        // → 各必須枠組み合わせから最大 1 候補を生成し、より多くの必須枠パターンを試す
+        if (results.length > prevCount) return;
+      }
     }
   }
 
