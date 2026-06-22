@@ -2,7 +2,7 @@
   <div class="app-root" :class="{ 'is-resizing': isResizing }">
     <!-- ヘッダー -->
     <header class="app-header">
-      <h1>🚢 艦これ遠征プランナー</h1>
+      <h1>🚢 <a href="https://github.com/Seizan-0811/kancolle-expedition-proposer" target="_blank" rel="noopener noreferrer">艦これ遠征プランナー</a></h1>
       <p class="subtitle">所持艦娘を登録して、同時出撃できる最適な遠征編成を提案します</p>
     </header>
 
@@ -1050,6 +1050,8 @@ function statusLabel(meets: boolean | null) {
   border-bottom: 2px solid #2a5a8c;
 }
 .app-header h1 { font-size: 1.5rem; font-weight: 700; color: #e8f4ff; }
+.app-header h1 a { color: inherit; text-decoration: none; }
+.app-header h1 a:hover { text-decoration: underline; }
 .subtitle { margin-top: 4px; font-size: 0.82rem; color: #7aa8cc; }
 
 .app-body {
