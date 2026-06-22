@@ -452,6 +452,11 @@
       "totalLevel": 300,
       "requiredTypes": [
         {
+          "CVL": 1,
+          "CA": 2,
+          "DD": 3
+        },
+        {
           "ECVL": 1,
           "DE": 2
         },

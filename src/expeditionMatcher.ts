@@ -395,6 +395,12 @@ export function matchExpeditions(
         };
         const tA = tierOf(a), tB = tierOf(b);
         if (tA !== tB) return tA - tB;
+        // CVL旗艦遠征では CVL 同士を燃費昇順（燃費が低い艦を先に試す）
+        if (expedition.flagshipType === 'CVL' && a.shipTypeId === 7 && b.shipTypeId === 7) {
+          const fuelA = a.fuel ?? Infinity;
+          const fuelB = b.fuel ?? Infinity;
+          if (fuelA !== fuelB) return fuelA - fuelB;
+        }
         return (b.stats?.fire ?? 0) - (a.stats?.fire ?? 0);
       });
 
