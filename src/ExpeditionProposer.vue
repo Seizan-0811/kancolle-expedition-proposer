@@ -166,6 +166,15 @@
               <span v-if="excludedShipIds.size" class="excluded-count">（除外中: {{ excludedShipIds.size }}隻）</span>
             </span>
             <div class="ship-list-actions">
+              <div class="ship-filter-wrap">
+                <input v-model="shipNameFilter" class="ship-filter-input" placeholder="艦名で絞り込み" />
+                <button v-if="shipNameFilter" class="ship-filter-clear" @click="shipNameFilter = ''">×</button>
+              </div>
+              <select v-model="shipSortOrder" class="sort-select">
+                <option value="default">入手順</option>
+                <option value="level-desc">Lv降順</option>
+                <option value="level-asc">Lv昇順</option>
+              </select>
               <button v-if="ships.length" class="btn btn-secondary-sm" @click="exportShipsJson">💾 保存</button>
               <label class="btn btn-secondary-sm">
                 📂 読み込み
@@ -426,6 +435,10 @@ let nextId = 1
 
 // 候補除外セット (uniqueId で管理; 削除せず一時的に除外)
 const excludedShipIds = ref(new Set<number>())
+
+// 艦娘リストのソート順・絞り込み
+const shipSortOrder = ref<'default' | 'level-desc' | 'level-asc'>('level-desc')
+const shipNameFilter = ref('')
 
 function toggleExclude(uniqueId: number) {
   const next = new Set(excludedShipIds.value)
@@ -854,16 +867,25 @@ const SHIP_TYPE_ORDER = [2, 3, 4, 5, 6, 7, 11, 18, 8, 9, 10, 13, 14, 16, 20, 1, 
 // DD, CL, CLT, CA, CAV, CVL, CV, CVB, FBB, BB, BBV, SS, SSV, AV, 潜母艦, DE, CT, 補給艦, 揚陸艦, 工作艦
 
 const shipsByType = computed(() => {
+  const filter = shipNameFilter.value.trim()
+  const filtered = filter
+    ? ships.value.filter(s => s.name.includes(filter))
+    : ships.value
   const groups = new Map<number, OwnedShip[]>()
-  for (const ship of ships.value) {
+  for (const ship of filtered) {
     if (!groups.has(ship.shipTypeId)) groups.set(ship.shipTypeId, [])
     groups.get(ship.shipTypeId)!.push(ship)
   }
+  const sortGroup = (list: OwnedShip[]) => {
+    if (shipSortOrder.value === 'level-desc') return [...list].sort((a, b) => b.level - a.level)
+    if (shipSortOrder.value === 'level-asc')  return [...list].sort((a, b) => a.level - b.level)
+    return list
+  }
   const ordered = SHIP_TYPE_ORDER
     .filter(id => groups.has(id))
-    .map(id => [id, groups.get(id)!] as [number, OwnedShip[]])
+    .map(id => [id, sortGroup(groups.get(id)!)] as [number, OwnedShip[]])
   for (const [id, list] of groups) {
-    if (!SHIP_TYPE_ORDER.includes(id)) ordered.push([id, list])
+    if (!SHIP_TYPE_ORDER.includes(id)) ordered.push([id, sortGroup(list)])
   }
   return ordered
 })
@@ -1016,6 +1038,21 @@ function statusLabel(meets: boolean | null) {
 }
 .btn-secondary-sm:hover { background: #1a2a3a; }
 .ship-list-actions { display: flex; gap: 4px; align-items: center; }
+.sort-select {
+  padding: 2px 6px; background: #151e30; border: 1px solid #2e3f60;
+  border-radius: 4px; color: #7ab0d0; font-size: 0.75rem; cursor: pointer;
+}
+.ship-filter-wrap { position: relative; display: flex; align-items: center; }
+.ship-filter-input {
+  padding: 2px 20px 2px 6px; background: #151e30; border: 1px solid #2e3f60;
+  border-radius: 4px; color: #d0e8ff; font-size: 0.75rem; width: 120px;
+}
+.ship-filter-input::placeholder { color: #4a6a8a; }
+.ship-filter-clear {
+  position: absolute; right: 4px; background: none; border: none;
+  color: #5a7a9a; cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0;
+}
+.ship-filter-clear:hover { color: #a0c0e0; }
 
 /* ── 遠征選択タブ スクロール領域 ─────────────────────── */
 .expedition-tab-scroll {
