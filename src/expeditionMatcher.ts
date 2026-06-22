@@ -221,7 +221,25 @@ function findCandidates(
 
   function fillFreeSlots(need: number, maxExtra: number): void {
     if (need <= 0) {
-      commitFleet();
+      // 必須艦数を確保した後、残りの上限枠（オプション枠）に大発可能艦を追加する。
+      // 大発動艇は遠征報酬にボーナスを与えるため、空き枠がある限り追加を試みる。
+      // ships は tier0（DD 優先）でソート済みのため、最初に見つかる大発可能艦は
+      // 自然と大発可能 DD になる。
+      // 再帰的に試みることで、空き枠の数だけ大発艦を積み上げる（最大 maxExtra 枠）。
+      if (maxExtra > 0) {
+        for (let i = 0; i < ships.length; i++) {
+          if (results.length >= maxResults) break;
+          if (usedIndices.has(i)) continue;
+          if (!ships[i].canDaihatsu) continue;
+          chosen.push(i);
+          usedIndices.add(i);
+          fillFreeSlots(0, maxExtra - 1); // さらにオプション枠を試みる（再帰）
+          chosen.pop();
+          usedIndices.delete(i);
+          break; // 1 隻追加できれば終了（必須枠の組み合わせ多様性を維持）
+        }
+      }
+      commitFleet(); // 大発追加なし（またはオプション枠なし）でも必ず commit
       return;
     }
     if (maxExtra <= 0) return; // これ以上追加できない
