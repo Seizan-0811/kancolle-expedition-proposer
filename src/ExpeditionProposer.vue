@@ -838,6 +838,9 @@ async function importFromKcweb() {
     }
 
     // OwnedShip に変換 (素ステータスのみ、装備は含まない)
+    // インポート前に既存データをクリア
+    ships.value = []
+    nextId = 1
     let imported = 0
     for (const [, raw] of seen) {
       const sm = shipMap.get(raw.i)
@@ -922,6 +925,9 @@ function importFromJson() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = JSON.parse(importJson.value) as any[]
     if (!Array.isArray(data)) throw new Error('配列形式 ([ ... ]) で入力してください')
+    // インポート前に既存データをクリア
+    const newShips: OwnedShip[] = []
+    nextId = 1
     for (const entry of data) {
       const typeId = TYPE_MAP[String(entry.type).toUpperCase()]
       if (!typeId) throw new Error(`不明な艦種: "${entry.type}" — DE/DD/CL/CA 等を指定してください`)
@@ -930,7 +936,7 @@ function importFromJson() {
       const fuel = entry.fuel != null && !isNaN(Number(entry.fuel)) ? Number(entry.fuel) : undefined
       const ammo = entry.ammo != null && !isNaN(Number(entry.ammo)) ? Number(entry.ammo) : undefined
       const canDaihatsu = entry.canDaihatsu === true
-      ships.value.push({
+      newShips.push({
         masterId: 0,
         uniqueId: nextId++,
         shipTypeId: typeId,
@@ -942,6 +948,7 @@ function importFromJson() {
         canDaihatsu,
       })
     }
+    ships.value = newShips
     importJson.value = ''
     matchResult.value = null
   } catch (e: unknown) {
