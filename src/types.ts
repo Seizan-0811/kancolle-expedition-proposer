@@ -10,7 +10,7 @@ export const SHIP_TYPE_IDS: Record<ShipTypeAbbr, number[]> = {
   DD:   [2],
   CL:   [3, 4, 21],  // 軽巡・雷巡・練巡
   CLT:  [4],
-  CA:   [5, 6],      // 重巡・航巡
+  CA:   [5],         // 重巡（航巡は含まない。単に「重巡」と指定された条件は航巡で代替不可）
   CAV:  [6],
   CVL:  [7],
   ECVL: [7],         // 護衛空母 (kc-web では CVL 相当として扱う)
