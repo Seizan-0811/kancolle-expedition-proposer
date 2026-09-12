@@ -230,6 +230,12 @@ function findCandidates(
   }
 
   function fillFreeSlots(need: number, maxExtra: number): void {
+    // backtrack と同じカウンタを共有してインクリメントする。
+    // これを怠ると、必須枠がすぐ確定して iterations が小さいうちに
+    // fillFreeSlots に処理が渡った場合、有効な組み合わせが存在しないケースで
+    // 自由枠の総当たり(最悪 O(N^need))が MAX_ITER に一切カウントされず
+    // 実質無制限に走ってしまいフリーズの原因となる。
+    if (++iterations > MAX_ITER) return;
     if (need <= 0) {
       // 必須艦数を確保した後、残りの上限枠（オプション枠）に大発可能艦を追加する。
       // 大発動艇は遠征報酬にボーナスを与えるため、空き枠がある限り追加を試みる。
