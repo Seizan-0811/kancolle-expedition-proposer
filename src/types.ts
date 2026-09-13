@@ -42,6 +42,27 @@ export interface Rewards {
   screw?: number;
 }
 
+/**
+ * 輸送用ドラム缶の要件 (ドラム缶遠征のみ)
+ * 装備は追跡していないため、実際に艦娘へ積んでいるかどうかは判定できない。
+ * あくまで「この条件を満たさないと失敗/大成功しない」という注意喚起の表示用。
+ */
+export interface DrumRequirement {
+  /**
+   * true の場合、これを満たさないと遠征そのものが失敗する。
+   * false の場合は「大成功確定」条件のみで、通常成功はドラム缶なしでも起こり得る。
+   */
+  requiredForSuccess: boolean;
+  /** 成功に必要な最低搭載隻数 (requiredForSuccess=true の場合のみ意味を持つ) */
+  minShips?: number;
+  /** 成功に必要な合計個数 (requiredForSuccess=true の場合のみ意味を持つ) */
+  minTotal?: number;
+  /** 大成功確定に必要な合計個数 */
+  greatSuccessMinTotal: number;
+  /** 大成功確定に必要なキラキラ艦数 */
+  greatSuccessMinKiraShips: number;
+}
+
 /** 遠征条件 (data/expeditions.json の 1 エントリに対応) */
 export interface Expedition {
   world: number;
@@ -71,6 +92,8 @@ export interface Expedition {
    */
   flagshipType?: ShipTypeAbbr;
   note: string;
+  /** 輸送用ドラム缶の要件 (該当する遠征のみ) */
+  drumRequirement?: DrumRequirement;
 }
 
 /** data/expeditions.json のトップレベル形式 */

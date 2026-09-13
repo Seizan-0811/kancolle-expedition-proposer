@@ -526,8 +526,15 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "ドラム缶3隻6個以上で大成功。CV枠は水母・護衛空母でもOK。",
-      "minDaihatsu": 2
+      "note": "3隻以上にドラム缶合計6個以上必須(なければ失敗)。8個以上+キラキラ4隻以上で大成功確定。CV枠は水母・護衛空母でもOK。",
+      "minDaihatsu": 2,
+      "drumRequirement": {
+        "requiredForSuccess": true,
+        "minShips": 3,
+        "minTotal": 6,
+        "greatSuccessMinTotal": 8,
+        "greatSuccessMinKiraShips": 4
+      }
     },
     {
       "world": 7,
@@ -764,8 +771,15 @@
       ],
       "fuelRate": 20,
       "ammoRate": 20,
-      "note": "ドラム缶3隻6個以上で大成功。駆逐5隻。ネジ1狙い。",
-      "minDaihatsu": 2
+      "note": "3隻以上にドラム缶合計4個以上必須(なければ失敗)。6個以上+キラキラ4隻以上で大成功確定。駆逐5隻。ネジ1狙い。",
+      "minDaihatsu": 2,
+      "drumRequirement": {
+        "requiredForSuccess": true,
+        "minShips": 3,
+        "minTotal": 4,
+        "greatSuccessMinTotal": 6,
+        "greatSuccessMinKiraShips": 4
+      }
     }
   ]
 }

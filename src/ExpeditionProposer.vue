@@ -359,6 +359,15 @@
                 <span v-if="sug.consumedAmmo != null" class="consumption-ammo">💣 {{ sug.consumedAmmo }}</span>
                 <span class="consumption-note">(各艦最大値の20%)</span>
               </div>
+
+              <!-- ドラム缶要件 (装備は追跡していないため注意喚起のみ) -->
+              <div v-if="getDrumRequirement(sug.expeditionId)" class="drum-warning">
+                <template v-if="getDrumRequirement(sug.expeditionId)!.requiredForSuccess">
+                  ⚠️ ドラム缶(輸送用)を{{ getDrumRequirement(sug.expeditionId)!.minShips }}隻以上・合計{{ getDrumRequirement(sug.expeditionId)!.minTotal }}個以上積まないと<strong>失敗</strong>します。
+                </template>
+                合計{{ getDrumRequirement(sug.expeditionId)!.greatSuccessMinTotal }}個以上＋キラキラ艦{{ getDrumRequirement(sug.expeditionId)!.greatSuccessMinKiraShips }}隻以上で大成功確定。
+                <span class="drum-warning-note">(装備状況は未追跡のため、実際に積んでいるかはご自身で確認してください)</span>
+              </div>
             </div>
           </div>
         </section>
@@ -390,7 +399,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import type { OwnedShip, Expedition, MatchResult, ShipStats } from './types'
+import type { OwnedShip, Expedition, MatchResult, ShipStats, DrumRequirement } from './types'
 import { matchExpeditions } from './expeditionMatcher'
 import rawData from '../data/expeditions.json'
 
@@ -1034,6 +1043,10 @@ function getRequired(expId: string, field: 'fire' | 'antiAir' | 'asw' | 'scout')
   return expeditionMap.get(expId)?.statRequirements[field] ?? 0
 }
 
+function getDrumRequirement(expId: string): DrumRequirement | undefined {
+  return expeditionMap.get(expId)?.drumRequirement
+}
+
 function statusClass(meets: boolean | null) {
   if (meets === true) return 'status-ok'
   if (meets === false) return 'status-ng'
@@ -1437,6 +1450,19 @@ details[open] > .ship-type-summary::before { transform: rotate(90deg); }
 .consumption-fuel  { color: #e8c44a; font-weight: 700; }
 .consumption-ammo  { color: #e07a50; font-weight: 700; }
 .consumption-note  { color: #5a7090; font-size: 0.72rem; margin-left: auto; }
+
+/* ── ドラム缶要件 ────────────────────────────────────────── */
+.drum-warning {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: rgba(224, 160, 64, 0.12);
+  border: 1px solid rgba(224, 160, 64, 0.4);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: #e0b060;
+  line-height: 1.5;
+}
+.drum-warning-note { display: block; color: #7a8a6a; font-size: 0.7rem; margin-top: 2px; }
 
 /* ── kc-web インポート ──────────────────────────────────── */
 .kcweb-method { margin-bottom: 4px; }
